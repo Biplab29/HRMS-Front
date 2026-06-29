@@ -160,11 +160,6 @@ function Topbar({ title, search = 'Search...', action }) {
           )}
         </div>
 
-        {/* Settings */}
-        <button className="icon-button" type="button" aria-label="Settings">
-          <FiSettings aria-hidden="true" size={18} />
-        </button>
-
         {/* Profile Dropdown */}
         <div ref={dropdownRef} className="relative ml-2">
           <button
