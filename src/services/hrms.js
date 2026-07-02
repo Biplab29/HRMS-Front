@@ -50,7 +50,8 @@ export const getSingleEmployee = async (id) => {
 
 /** PUT /employees/profile/update */
 export const updateOwnProfile = async (payload) => {
-  const { data } = await api.put("/employees/profile/update", payload);
+  const headers = payload instanceof FormData ? { "Content-Type": "multipart/form-data" } : {};
+  const { data } = await api.put("/employee/profile/update", payload, { headers });
   return data;
 };
 
@@ -60,13 +61,15 @@ export const updateOwnProfile = async (payload) => {
  *            joiningDate?, employmentType?, salary? }
  */
 export const registerEmployee = async (payload) => {
-  const { data } = await api.post("/employee/register", payload);
+  const headers = payload instanceof FormData ? { "Content-Type": "multipart/form-data" } : {};
+  const { data } = await api.post("/auth/register", payload, { headers });
   return data;
 };
 
 /** PUT /employee/:id — update employee profile (admin / hr) */
 export const updateEmployee = async (id, payload) => {
-  const { data } = await api.put(`/employee/${id}`, payload);
+  const headers = payload instanceof FormData ? { "Content-Type": "multipart/form-data" } : {};
+  const { data } = await api.put(`/employee/${id}`, payload, { headers });
   return data;
 };
 
@@ -78,7 +81,8 @@ export const deleteEmployee = async (id) => {
 
 /** PUT /employee/onboarding/complete — employee completes their own profile */
 export const completeOnboarding = async (payload) => {
-  const { data } = await api.put("/employee/onboarding/complete", payload);
+  const headers = payload instanceof FormData ? { "Content-Type": "multipart/form-data" } : {};
+  const { data } = await api.put("/employee/onboarding/complete", payload, { headers });
   return data;
 };
 
@@ -294,5 +298,17 @@ export const markPayrollPaid = async (payrollId) => {
 /** DELETE /payroll/:id — delete payroll record (admin / hr) */
 export const deletePayroll = async (id) => {
   const { data } = await api.delete(`/payroll/${id}`);
+  return data;
+};
+
+/** POST /auth/forgot-password — trigger reset email */
+export const forgotPassword = async (payload) => {
+  const { data } = await api.post("/auth/forgot-password", payload);
+  return data;
+};
+
+/** POST /auth/reset-password — apply new password */
+export const resetPassword = async (payload) => {
+  const { data } = await api.post("/auth/reset-password", payload);
   return data;
 };

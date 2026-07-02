@@ -21,6 +21,7 @@ function Settings() {
     dateOfBirth: '',
     address: '',
   })
+  const [profileImage, setProfileImage] = useState(null)
 
   // Initialize form with current employee data
   useEffect(() => {
@@ -49,10 +50,24 @@ function Settings() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     const toastId = toast.loading('Saving profile...')
-    const result = await dispatch(updateUserProfile(formData))
+    
+    const data = new FormData()
+    data.append('phone', formData.phone)
+    data.append('gender', formData.gender)
+    data.append('dateOfBirth', formData.dateOfBirth)
+    data.append('address', formData.address)
+    if (profileImage) {
+      data.append('profileImage', profileImage)
+    }
+
+    const result = await dispatch(updateUserProfile(data))
     
     if (updateUserProfile.fulfilled.match(result)) {
       toast.success('Profile updated successfully', { id: toastId })
+      setProfileImage(null)
+      const fileInput = document.getElementById('settingsProfileImageInput')
+      if (fileInput) fileInput.value = ''
+      dispatch(fetchCurrentUser())
     } else {
       toast.error(result.payload || 'Failed to update profile', { id: toastId })
     }
@@ -76,9 +91,17 @@ function Settings() {
         {/* Profile Summary Card */}
         <div className="lg:col-span-1">
           <Panel className="flex flex-col items-center text-center">
-            <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-brand-gradient text-3xl font-bold text-white shadow-xl">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
+            {user.profileImage || employee?.profileImage ? (
+              <img
+                src={user.profileImage || employee.profileImage}
+                alt={user.name}
+                className="mb-4 h-24 w-24 rounded-full object-cover shadow-xl border-2 border-brand-500"
+              />
+            ) : (
+              <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-brand-gradient text-3xl font-bold text-white shadow-xl">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+            )}
             <h3 className="text-lg font-semibold text-steel-200">{user.name}</h3>
             <p className="text-sm text-steel-400">{user.email}</p>
             <span className="mt-3 inline-block rounded-full bg-brand-500/10 px-3 py-1 text-xs font-semibold text-brand-400 border border-brand-500/20">
@@ -117,13 +140,15 @@ function Settings() {
             <Panel title="Edit Profile Details" icon={FiUser}>
               <form onSubmit={handleSubmit} className="mt-4 space-y-6">
                 <div className="grid gap-4 md:grid-cols-2">
-                  <Field
-                    label="Phone Number"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="e.g. +1 234 567 8900"
-                  />
+                  <Field label="Phone Number">
+                    <input
+                      className="field-dark mt-2 w-full"
+                      name="phone"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      placeholder="e.g. +1 234 567 8900"
+                    />
+                  </Field>
                   
                   <label className="block">
                     <span className="mb-1.5 block text-[13px] font-semibold text-steel-300">Gender</span>
@@ -139,13 +164,26 @@ function Settings() {
                     </select>
                   </label>
 
-                  <Field
-                    label="Date of Birth"
-                    name="dateOfBirth"
-                    type="date"
-                    value={formData.dateOfBirth}
-                    onChange={handleChange}
-                  />
+                  <Field label="Date of Birth">
+                    <input
+                      className="field-dark mt-2 w-full"
+                      name="dateOfBirth"
+                      type="date"
+                      value={formData.dateOfBirth}
+                      onChange={handleChange}
+                    />
+                  </Field>
+
+                  <Field label="Profile Image">
+                    <input
+                      id="settingsProfileImageInput"
+                      className="field-dark mt-2 w-full file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-500/20 file:text-brand-300 hover:file:bg-brand-500/30"
+                      name="profileImage"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setProfileImage(e.target.files[0])}
+                    />
+                  </Field>
                 </div>
 
                 <label className="block">

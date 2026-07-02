@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import toast from 'react-hot-toast'
 import { FiCalendar, FiDownload, FiFilter, FiRefreshCw, FiSliders } from 'react-icons/fi'
 import AppShell from '../components/layout/AppShell.jsx'
 import Panel from '../components/ui/Panel.jsx'
@@ -11,6 +12,7 @@ import {
   selectAttendanceLoading,
   selectAttendanceRecords,
 } from '../store/slices/attendanceSlice'
+import { fetchAllEmployeeData, selectDepartments } from '../store/slices/employeeSlice'
 import CalendarCell from '../components/ui/CalendarCell.jsx'
 import Presence from '../components/ui/Presence.jsx'
 
@@ -79,16 +81,31 @@ function Attendance() {
   const dispatch = useDispatch()
   const attendance = useSelector(selectAttendanceRecords)
   const loading = useSelector(selectAttendanceLoading)
+  const departments = useSelector(selectDepartments)
+
+  const [selectedDept, setSelectedDept] = useState('All Departments')
 
   useEffect(() => {
     dispatch(fetchAttendance())
+    dispatch(fetchAllEmployeeData())
   }, [dispatch])
 
-  const reload = () => dispatch(fetchAttendance())
+  const reload = () => {
+    dispatch(fetchAttendance())
+    dispatch(fetchAllEmployeeData())
+  }
 
-  const rows = attendance.map(mapAttendanceRow)
+  const filteredAttendance = useMemo(() => {
+    if (selectedDept === 'All Departments') return attendance
+    return attendance.filter(item => {
+      const deptName = item.employee?.department?.departmentName || item.employee?.department
+      return deptName === selectedDept
+    })
+  }, [attendance, selectedDept])
+
+  const rows = filteredAttendance.map(mapAttendanceRow)
   
-  const liveExceptions = attendance
+  const liveExceptions = filteredAttendance
     .filter(item => item.status && item.status !== 'present')
     .map(item => {
       const name = item.employee?.user?.name || item.employee?.employeeId || 'Employee'
@@ -102,28 +119,82 @@ function Attendance() {
     })
     .slice(0, 5)
 
-  const daysInMonth = Array.from({length: 31}, (_, i) => i + 1)
-  const liveAttendanceDays = daysInMonth.map(dayNum => {
-    const recordsForDay = attendance.filter(item => {
-       if (!item.date) return false;
-       const d = new Date(item.date);
-       return d.getDate() === dayNum;
-    });
-    
-    const bars = recordsForDay.map(record => {
-      return record.status === 'present' ? 'bg-success' : 
-             record.status === 'late' ? 'bg-warning' : 
-             record.status === 'leave' ? 'bg-brand-400' : 'bg-danger';
-    });
-    return { day: dayNum, bars };
-  });
+  const calendarCells = useMemo(() => {
+    const now = new Date()
+    const year = now.getFullYear()
+    const month = now.getMonth()
 
-  const presentCount = attendance.filter((item) => item.status === 'present').length
-  const lateCount = attendance.filter((item) => item.status === 'late').length
-  const leaveCount = attendance.filter((item) => item.status === 'leave').length
-  const onTimeRate = attendance.length
-    ? Math.round((presentCount / attendance.length) * 100)
+    const firstDay = new Date(year, month, 1)
+    const startDayOfWeek = firstDay.getDay()
+    const totalDays = new Date(year, month + 1, 0).getDate()
+    const prevMonthTotalDays = new Date(year, month, 0).getDate()
+
+    const cells = []
+
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      cells.push({
+        day: prevMonthTotalDays - i,
+        muted: true,
+        bars: []
+      })
+    }
+
+    for (let dayNum = 1; dayNum <= totalDays; dayNum++) {
+      const recordsForDay = filteredAttendance.filter(item => {
+        if (!item.date) return false
+        const d = new Date(item.date)
+        return d.getDate() === dayNum && d.getMonth() === month && d.getFullYear() === year
+      })
+
+      const bars = recordsForDay.map(record => {
+        return record.status === 'present' ? 'bg-success' : 
+               record.status === 'late' ? 'bg-warning' : 
+               record.status === 'leave' ? 'bg-brand-400' : 'bg-danger'
+      })
+
+      cells.push({
+        day: dayNum,
+        muted: false,
+        bars
+      })
+    }
+
+    return cells
+  }, [filteredAttendance])
+
+  const presentCount = filteredAttendance.filter((item) => item.status === 'present').length
+  const lateCount = filteredAttendance.filter((item) => item.status === 'late').length
+  const leaveCount = filteredAttendance.filter((item) => item.status === 'leave').length
+  const onTimeRate = filteredAttendance.length
+    ? Math.round((presentCount / filteredAttendance.length) * 100)
     : 0
+
+  const handleExportCSV = () => {
+    if (filteredAttendance.length === 0) return toast.error("No attendance records to export")
+    const headers = ["Employee", "Date", "Check-in", "Check-out", "Total Hours", "Status"]
+    const csvRows = filteredAttendance.map(item => [
+      item.employee?.user?.name || item.employee?.employeeId || "N/A",
+      formatDate(item.date),
+      formatTime(item.checkIn),
+      formatTime(item.checkOut),
+      getTotalHours(item.checkIn, item.checkOut),
+      formatTitle(item.status)
+    ])
+    const csvContent = [
+      headers.join(","),
+      ...csvRows.map(r => r.map(val => `"${String(val).replace(/"/g, '""')}"`).join(","))
+    ].join("\n")
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.setAttribute("href", url)
+    link.setAttribute("download", `attendance_export_${new Date().toISOString().slice(0,10)}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    toast.success("Attendance CSV exported successfully")
+  }
 
 
   return (
@@ -148,25 +219,33 @@ function Attendance() {
       </section>
 
       <Panel className="mt-4">
-        <div className="grid gap-3 md:grid-cols-[170px_1fr_auto] md:items-end">
+        <div className="grid gap-3 md:grid-cols-[200px_1fr_auto] md:items-end">
           <label>
             <span className="muted-label">Department</span>
-            <select className="field-dark mt-2 w-full">
-              <option>All Departments</option>
+            <select 
+              className="field-dark mt-2 w-full"
+              value={selectedDept}
+              onChange={(e) => setSelectedDept(e.target.value)}
+            >
+              <option value="All Departments">All Departments</option>
+              {departments.map(dept => (
+                <option key={dept._id} value={dept.departmentName}>
+                  {dept.departmentName}
+                </option>
+              ))}
             </select>
           </label>
           <label>
             <span className="muted-label">Date Range</span>
             <span className="mt-2 flex h-8 items-center gap-2 rounded border border-ink-650 bg-ink-950 px-3 text-[12px] text-steel-300">
               <FiCalendar />
-              Latest attendance records
+              {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
             </span>
           </label>
           <div className="flex gap-2">
-            <button className="soft-button" type="button">Calendar View</button>
-            <button className="soft-button" type="button">Detailed List</button>
-            <button className="icon-button" type="button" aria-label="Filter"><FiFilter /></button>
-            <button className="icon-button" type="button" aria-label="Download"><FiDownload /></button>
+            <button className="soft-button" type="button" onClick={handleExportCSV}>
+              <FiDownload className="mr-1 inline" /> Export CSV
+            </button>
           </div>
         </div>
       </Panel>
@@ -177,10 +256,9 @@ function Attendance() {
             {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((day) => (
               <div key={day} className="bg-ink-800 px-3 py-3 text-steel-400">{day}</div>
             ))}
-            {[24, 25, 26, 27, 28, 29, 30].map((day) => (
-              <CalendarCell key={`p-${day}`} day={day} muted />
+            {calendarCells.map((cell, idx) => (
+              <CalendarCell key={`${cell.day}-${cell.muted}-${idx}`} {...cell} />
             ))}
-            {liveAttendanceDays.map((day) => <CalendarCell key={day.day} {...day} />)}
           </div>
         </Panel>
 

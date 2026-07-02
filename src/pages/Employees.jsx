@@ -30,6 +30,7 @@ import {
   selectInviteLink,
 } from '../store/slices/employeeSlice'
 import { selectSession, selectUser } from '../store/slices/authSlice'
+import { updateEmployee as updateEmployeeApi, deleteEmployee as deleteEmployeeApi } from '../services/hrms'
 import Field from '../components/ui/Field.jsx'
 
 const initialEmployeeForm = {
@@ -87,6 +88,7 @@ const toEmployeePerson = (employee) => {
   return {
     name,
     avatar: getInitials(name),
+    image: employee.profileImage || employee.user?.profileImage,
     role: formatRole(employee.user?.role),
     team: getDepartmentName(employee.department),
   }
@@ -106,10 +108,15 @@ function Employees() {
   const canManageEmployees = userRole === 'admin' || userRole === 'hr'
 
   const [formData, setFormData] = useState(initialEmployeeForm)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [profileImage, setProfileImage] = useState(null)
   const [departmentForm, setDepartmentForm] = useState(initialDepartmentForm)
   const [designationForm, setDesignationForm] = useState(initialDesignationForm)
   const [setupLoading, setSetupLoading] = useState('')
   const [search, setSearch] = useState('')
+
+  const isEmployeeProfile = formData.role === 'employee' || formData.role === 'manager'
 
   useEffect(() => {
     dispatch(fetchAllEmployeeData())
@@ -157,26 +164,109 @@ function Employees() {
     }))
   }
 
+  const handleStartEdit = (employee) => {
+    setIsEditing(true)
+    setEditingId(employee._id)
+    setFormData({
+      name: employee.user?.name || '',
+      email: employee.user?.email || '',
+      role: employee.user?.role || 'employee',
+      department: getDepartmentId(employee.department) || '',
+      designation: employee.designation?._id || employee.designation || '',
+      manager: employee.manager?._id || employee.manager || '',
+      joiningDate: employee.joiningDate ? employee.joiningDate.split('T')[0] : '',
+      employmentType: employee.employmentType || 'full-time',
+      salary: employee.salary || '',
+    })
+    setProfileImage(null)
+    const formElement = document.getElementById('employeeRegisterPanel')
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setIsEditing(false)
+    setEditingId(null)
+    setFormData(initialEmployeeForm)
+    setProfileImage(null)
+    const fileInput = document.getElementById('employeeProfileImageInput')
+    if (fileInput) fileInput.value = ''
+  }
+
+  const handleDeleteEmployee = async (employeeId, name) => {
+    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
+      const toastId = toast.loading('Deleting employee...')
+      try {
+        const result = await deleteEmployeeApi(employeeId)
+        if (result.success) {
+          toast.success('Employee deleted successfully', { id: toastId })
+          reload()
+        } else {
+          toast.error(result.message || 'Deletion failed', { id: toastId })
+        }
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Deletion failed', { id: toastId })
+      }
+    }
+  }
+
   const handleRegisterEmployee = async (event) => {
     event.preventDefault()
 
-    if (!formData.name || !formData.email || !formData.department || !formData.designation) {
-      return toast.error('Name, email, department and designation are required')
+    const isEmployeeProfile = formData.role === 'employee' || formData.role === 'manager'
+
+    if (!formData.name || !formData.email) {
+      return toast.error('Name and email are required')
     }
 
-    const payload = {
-      ...formData,
-      manager: formData.manager || undefined,
-      salary: formData.salary || undefined,
-      joiningDate: formData.joiningDate || undefined,
+    if (isEmployeeProfile && (!formData.department || !formData.designation)) {
+      return toast.error('Department and designation are required')
     }
 
-    const toastId = toast.loading('Registering employee...')
-    const result = await dispatch(addEmployee(payload))
+    const data = new FormData()
+    data.append('name', formData.name.trim())
+    data.append('email', formData.email.trim().toLowerCase())
+    data.append('role', formData.role)
+
+    if (isEmployeeProfile) {
+      data.append('department', formData.department)
+      data.append('designation', formData.designation)
+      data.append('employmentType', formData.employmentType)
+      if (formData.manager) data.append('manager', formData.manager)
+      if (formData.salary) data.append('salary', formData.salary)
+      if (formData.joiningDate) data.append('joiningDate', formData.joiningDate)
+    }
+
+    if (profileImage) data.append('profileImage', profileImage)
+
+    const toastId = toast.loading(isEditing ? 'Updating employee...' : 'Registering user...')
+
+    if (isEditing) {
+      try {
+        const result = await updateEmployeeApi(editingId, data)
+        if (result.success) {
+          toast.success(result.message || 'Employee updated successfully', { id: toastId })
+          handleCancelEdit()
+          reload()
+        } else {
+          toast.error(result.message || 'Update failed', { id: toastId })
+        }
+      } catch (error) {
+        toast.error(error.response?.data?.message || 'Update failed', { id: toastId })
+      }
+      return
+    }
+
+    const result = await dispatch(addEmployee(data))
 
     if (addEmployee.fulfilled.match(result)) {
       toast.success(result.payload.message || 'Employee registered successfully', { id: toastId })
       setFormData(initialEmployeeForm)
+      setProfileImage(null)
+      // Reset the file input element if needed by reloading or resetting state
+      const fileInput = document.getElementById('employeeProfileImageInput')
+      if (fileInput) fileInput.value = ''
       reload()
     } else {
       toast.error(result.payload || 'Employee registration failed', { id: toastId })
@@ -294,10 +384,10 @@ function Employees() {
           }
         >
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-left text-[12px]">
+            <table className="w-full min-w-[900px] text-left text-[12px]">
               <thead className="border-b border-white/10 uppercase text-steel-400 bg-black/20">
                 <tr>
-                  {['Employee', 'Role', 'Department', 'Designation', 'Status', 'Manager', 'Action'].map((head) => (
+                  {['Employee', 'ID', 'Role', 'Department', 'Designation', 'Status', 'Manager', 'Action'].map((head) => (
                     <th key={head} className="px-4 py-3.5 font-bold tracking-wider">{head}</th>
                   ))}
                 </tr>
@@ -320,6 +410,11 @@ function Employees() {
                           </div>
                         </div>
                       </td>
+                      <td className="px-3 py-4 whitespace-nowrap">
+                        <span className="font-mono text-[12px] text-steel-300">
+                          {employee.employeeId}
+                        </span>
+                      </td>
                       <td className="px-3 py-4 text-steel-300">{person.role}</td>
                       <td className="px-3 py-4 text-steel-400">{person.team}</td>
                       <td className="px-3 py-4 text-steel-400">{getDesignationName(employee.designation)}</td>
@@ -329,10 +424,27 @@ function Employees() {
                         </StatusBadge>
                       </td>
                       <td className="px-3 py-4 text-steel-400">{manager}</td>
-                      <td className="px-3 py-4">
-                        <button className="icon-button" type="button" aria-label={`Actions for ${person.name}`}>
-                          <FiMoreVertical />
-                        </button>
+                      <td className="px-3 py-4 whitespace-nowrap">
+                        {canManageEmployees ? (
+                          <div className="flex gap-2">
+                            <button
+                              className="h-7 rounded bg-brand-500/20 px-2 text-[10px] font-semibold text-brand-300 hover:bg-brand-500/30 border border-brand-500/20 transition-colors"
+                              type="button"
+                              onClick={() => handleStartEdit(employee)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="h-7 rounded border border-danger/40 bg-danger/10 px-2 text-[10px] font-semibold text-danger hover:bg-danger/25 transition-colors"
+                              type="button"
+                              onClick={() => handleDeleteEmployee(employee._id, person.name)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-steel-600">-</span>
+                        )}
                       </td>
                     </tr>
                   )
@@ -349,10 +461,22 @@ function Employees() {
         </Panel>
 
         {canManageEmployees && (
-        <aside className="space-y-4">
+        <aside id="employeeRegisterPanel" className="space-y-4">
           <Panel
-            title="Register Employee"
-            action={<span className="muted-label text-brand-300">API Connected</span>}
+            title={isEditing ? 'Update Employee' : 'Register Employee'}
+            action={
+              isEditing ? (
+                <button
+                  className="text-[11px] font-semibold text-danger hover:underline"
+                  type="button"
+                  onClick={handleCancelEdit}
+                >
+                  Cancel Edit
+                </button>
+              ) : (
+                <span className="muted-label text-brand-300">API Connected</span>
+              )
+            }
           >
             <form className="space-y-4" onSubmit={handleRegisterEmployee}>
               <Field label="Full Name">
@@ -376,7 +500,18 @@ function Employees() {
                 />
               </Field>
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Profile Image">
+                <input
+                  id="employeeProfileImageInput"
+                  className="field-dark mt-2 w-full file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-500/20 file:text-brand-300 hover:file:bg-brand-500/30"
+                  name="profileImage"
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setProfileImage(e.target.files[0])}
+                />
+              </Field>
+
+              <div className={isEmployeeProfile ? "grid gap-3 sm:grid-cols-2" : "w-full"}>
                 <Field label="Role">
                   <select
                     className="field-dark mt-2 w-full"
@@ -386,107 +521,119 @@ function Employees() {
                   >
                     <option value="employee">Employee</option>
                     <option value="manager">Manager</option>
+                    {userRole === 'admin' && (
+                      <>
+                        <option value="hr">HR Manager</option>
+                        <option value="admin">Administrator</option>
+                      </>
+                    )}
                   </select>
                 </Field>
 
-                <Field label="Employment">
-                  <select
-                    className="field-dark mt-2 w-full"
-                    name="employmentType"
-                    value={formData.employmentType}
-                    onChange={handleEmployeeChange}
-                  >
-                    <option value="full-time">Full-time</option>
-                    <option value="part-time">Part-time</option>
-                    <option value="intern">Intern</option>
-                    <option value="contract">Contract</option>
-                  </select>
-                </Field>
+                {isEmployeeProfile && (
+                  <Field label="Employment">
+                    <select
+                      className="field-dark mt-2 w-full"
+                      name="employmentType"
+                      value={formData.employmentType}
+                      onChange={handleEmployeeChange}
+                    >
+                      <option value="full-time">Full-time</option>
+                      <option value="part-time">Part-time</option>
+                      <option value="intern">Intern</option>
+                      <option value="contract">Contract</option>
+                    </select>
+                  </Field>
+                )}
               </div>
 
-              <Field label="Department">
-                <select
-                  className="field-dark mt-2 w-full"
-                  name="department"
-                  value={formData.department}
-                  onChange={handleEmployeeChange}
-                >
-                  <option value="">Select department</option>
-                  {departments.map((department) => (
-                    <option key={department._id} value={department._id}>
-                      {department.departmentName}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+              {isEmployeeProfile && (
+                <>
+                  <Field label="Department">
+                    <select
+                      className="field-dark mt-2 w-full"
+                      name="department"
+                      value={formData.department}
+                      onChange={handleEmployeeChange}
+                    >
+                      <option value="">Select department</option>
+                      {departments.map((department) => (
+                        <option key={department._id} value={department._id}>
+                          {department.departmentName}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
 
-              <Field label="Designation">
-                <select
-                  className="field-dark mt-2 w-full"
-                  name="designation"
-                  value={formData.designation}
-                  onChange={handleEmployeeChange}
-                  disabled={!formData.department}
-                >
-                  <option value="">Select designation</option>
-                  {filteredDesignations.map((designation) => (
-                    <option key={designation._id} value={designation._id}>
-                      {designation.title}
-                    </option>
-                  ))}
-                </select>
-              </Field>
+                  <Field label="Designation">
+                    <select
+                      className="field-dark mt-2 w-full"
+                      name="designation"
+                      value={formData.designation}
+                      onChange={handleEmployeeChange}
+                      disabled={!formData.department}
+                    >
+                      <option value="">Select designation</option>
+                      {filteredDesignations.map((designation) => (
+                        <option key={designation._id} value={designation._id}>
+                          {designation.title}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
 
-              <Field label="Manager (Optional)">
-                <select
-                  className="field-dark mt-2 w-full"
-                  name="manager"
-                  value={formData.manager}
-                  onChange={handleEmployeeChange}
-                >
-                  <option value="">Select manager</option>
-                  {managers.map((manager) => {
-                    const name = manager.user?.name || manager.employeeId || 'Manager'
-                    return (
-                      <option key={manager._id} value={manager._id}>
-                        {name} ({getDepartmentName(manager.department)})
-                      </option>
-                    )
-                  })}
-                </select>
-              </Field>
+                  <Field label="Manager (Optional)">
+                    <select
+                      className="field-dark mt-2 w-full"
+                      name="manager"
+                      value={formData.manager}
+                      onChange={handleEmployeeChange}
+                    >
+                      <option value="">Select manager</option>
+                      {managers.map((manager) => {
+                        const name = manager.user?.name || manager.employeeId || 'Manager'
+                        return (
+                          <option key={manager._id} value={manager._id}>
+                            {name} ({getDepartmentName(manager.department)})
+                          </option>
+                        )
+                      })}
+                    </select>
+                  </Field>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Joining Date">
-                  <input
-                    className="field-dark mt-2 w-full"
-                    name="joiningDate"
-                    type="date"
-                    value={formData.joiningDate}
-                    onChange={handleEmployeeChange}
-                  />
-                </Field>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Field label="Joining Date">
+                      <input
+                        className="field-dark mt-2 w-full"
+                        name="joiningDate"
+                        type="date"
+                        value={formData.joiningDate}
+                        onChange={handleEmployeeChange}
+                      />
+                    </Field>
 
-                <Field label="Salary">
-                  <input
-                    className="field-dark mt-2 w-full"
-                    name="salary"
-                    type="number"
-                    min="0"
-                    value={formData.salary}
-                    onChange={handleEmployeeChange}
-                    placeholder="35000"
-                  />
-                </Field>
-              </div>
+                    <Field label="Salary">
+                      <input
+                        className="field-dark mt-2 w-full"
+                        name="salary"
+                        type="number"
+                        min="0"
+                        value={formData.salary}
+                        onChange={handleEmployeeChange}
+                        placeholder="35000"
+                      />
+                    </Field>
+                  </div>
+                </>
+              )}
 
               <button
                 className="primary-button h-10 w-full"
                 type="submit"
                 disabled={submitting}
               >
-                <FiSend />
-                {submitting ? 'Sending Invite...' : 'Register & Send Invite'}
+                {!isEditing && <FiSend />}
+                {isEditing ? 'Update Employee' : (submitting ? 'Sending Invite...' : 'Register & Send Invite')}
               </button>
             </form>
 

@@ -1,6 +1,21 @@
 import { FiFileText } from 'react-icons/fi'
+import { useSelector } from 'react-redux'
+import { selectUser } from '../../store/slices/authSlice.js'
+import { getStoredUser } from '../../utils/roleRoutes.js'
 
 function Brand({ compact = false }) {
+  const user = useSelector(selectUser) || getStoredUser()
+  const role = user?.role || 'admin'
+
+  const consoleLabels = {
+    admin: 'Admin Console',
+    hr: 'HR Console',
+    manager: 'Manager Console',
+    employee: 'Employee Portal',
+  }
+
+  const subtitle = consoleLabels[role] || 'Console'
+
   return (
     <div className="flex items-center gap-3">
       {compact && (
@@ -10,10 +25,10 @@ function Brand({ compact = false }) {
       )}
       <div>
         <h1 className="text-[28px] font-semibold leading-[0.95] tracking-normal text-brand-300">
-          HRMS
-          <span className="block text-steel-200 dark:text-white">Portal</span>
+          People
+          <span className="block text-steel-200 dark:text-white">Grid</span>
         </h1>
-        <p className="mt-1 text-[11px] text-steel-400">Admin Console</p>
+        <p className="mt-1 text-[11px] text-steel-400">{subtitle}</p>
       </div>
     </div>
   )

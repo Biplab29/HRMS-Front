@@ -51,15 +51,48 @@ function Payslip() {
   ]
   return (
     <AppShell title="Employee Payslip" search="Search payroll...">
+      <style>{`
+        @media print {
+          body * {
+            visibility: hidden !important;
+          }
+          #print-area, #print-area * {
+            visibility: visible !important;
+          }
+          #print-area {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            background: white !important;
+            color: black !important;
+            box-shadow: none !important;
+          }
+          #print-area * {
+            color: #000000 !important;
+          }
+          .text-brand-300 {
+            color: #1f9c5e !important;
+          }
+          .bg-brand-500 {
+            background-color: #25c979 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        }
+      `}</style>
       <div className="mb-4 flex items-center justify-between gap-3">
         <Link className="text-[12px] text-steel-400 hover:text-brand-300" to="/payroll">← Back to Payroll</Link>
         <div className="flex gap-2">
-          <button className="soft-button" type="button"><FiPrinter /> Print</button>
-          <button className="primary-button h-8 bg-brand-300 text-ink-950" type="button"><FiDownload /> Download PDF</button>
+          <button className="soft-button" type="button" onClick={() => window.print()}><FiPrinter /> Print</button>
+          <button className="primary-button h-8 bg-brand-300 text-ink-950" type="button" onClick={() => window.print()}><FiDownload /> Download PDF</button>
         </div>
       </div>
 
-      <article className="console-card mx-auto max-w-[780px] p-6">
+      <article id="print-area" className="console-card mx-auto max-w-[780px] p-6">
         <header className="flex items-start justify-between border-b border-ink-650 pb-6">
           <div className="flex gap-4">
             <span className="flex h-12 w-12 items-center justify-center rounded bg-brand-500 text-xl text-white">

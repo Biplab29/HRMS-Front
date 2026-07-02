@@ -1,5 +1,5 @@
 export const getDashboardPath = (role) => {
-  if (role === 'admin') return '/admin/dashboard'
+  if (role === 'admin' || role === 'hr' || role === 'manager') return '/admin/dashboard'
   return '/employee/dashboard'
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 import toast from 'react-hot-toast'
 import {
   FiActivity,
@@ -14,6 +15,8 @@ import BarChart from '../components/charts/BarChart.jsx'
 import Panel from '../components/ui/Panel.jsx'
 import StatCard from '../components/ui/StatCard.jsx'
 import StatusBadge from '../components/ui/StatusBadge.jsx'
+import { selectUser } from '../store/slices/authSlice'
+import { getStoredUser } from '../utils/roleRoutes'
 import { getApiErrorMessage } from '../services/api'
 import { getAttendance, getEmployees, getLeaves, getPayrolls } from '../services/hrms'
 
@@ -81,33 +84,67 @@ function AdminDashboard() {
     (payroll) => payroll.paymentStatus !== 'paid',
   ).length
 
+  const user = useSelector(selectUser) || getStoredUser()
+  const role = user?.role || 'admin'
+
+  const dashboardTitles = {
+    admin: 'Admin Dashboard',
+    hr: 'HR Manager Dashboard',
+    manager: 'Manager Dashboard',
+    employee: 'Employee Dashboard',
+  }
+  const dashboardTitle = dashboardTitles[role] || 'Dashboard'
+
+  const controlCenterLabels = {
+    admin: 'Admin Control Center',
+    hr: 'HR Control Center',
+    manager: 'Manager Control Center',
+    employee: 'Employee Control Center',
+  }
+  const controlCenterLabel = controlCenterLabels[role] || 'Control Center'
+
+  const deptCounts = {
+    engineering: 0,
+    marketing: 0,
+    sales: 0,
+    product: 0,
+    support: 0,
+  }
+
+  stats.employees.forEach((emp) => {
+    const deptName = emp.department?.departmentName?.toLowerCase().trim()
+    if (deptName) {
+      if (deptName.includes('eng')) deptCounts.engineering++
+      else if (deptName.includes('market')) deptCounts.marketing++
+      else if (deptName.includes('sale')) deptCounts.sales++
+      else if (deptName.includes('prod')) deptCounts.product++
+      else if (deptName.includes('supp')) deptCounts.support++
+    }
+  })
+
+  const departmentValues = [
+    deptCounts.engineering,
+    deptCounts.marketing,
+    deptCounts.sales,
+    deptCounts.product,
+    deptCounts.support,
+  ]
+
   return (
     <AppShell
-      title="Admin Dashboard"
+      title={dashboardTitle}
       search="Search organization..."
-      action={
-        <button
-          className="primary-button"
-          type="button"
-          onClick={() => setReloadKey((value) => value + 1)}
-        >
-          <FiRefreshCw /> Refresh
-        </button>
-      }
     >
       <section className="rounded-lg border border-ink-650 bg-gradient-to-br from-ink-750 via-ink-800 to-ink-900 p-6 shadow-insetLine">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
-            <StatusBadge tone="brand">Admin Control Center</StatusBadge>
+            <StatusBadge tone="brand">{controlCenterLabel}</StatusBadge>
             <h1 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-steel-200 dark:text-white">
               Organization command dashboard
             </h1>
             <p className="mt-2 max-w-2xl text-[12px] leading-5 text-steel-400">
               Monitor workforce, attendance, leave risk, and payroll exposure from live backend APIs.
             </p>
-          </div>
-          <div className="rounded border border-ink-650 bg-ink-950 px-4 py-3 text-[12px] text-steel-300">
-            {loading ? 'Syncing backend...' : 'Backend synced'}
           </div>
         </div>
       </section>
@@ -121,25 +158,27 @@ function AdminDashboard() {
 
       <section className="mt-4 grid gap-4 lg:grid-cols-[1fr_360px]">
         <Panel title="Department Load" action={<span className="muted-label text-brand-300">Live employees</span>}>
-          <BarChart values={[82, 64, 48, 72, 56]} />
+          <BarChart values={departmentValues} />
         </Panel>
 
         <Panel title="Admin Actions" action={<FiShield className="text-brand-300" />}>
           {[
-            ['Invite employees', '/employees', 'Create users, assign department/designation, and send invite links.'],
-            ['Review payroll', '/payroll', 'Track pending salary records and mark payments as paid.'],
-            ['Audit attendance', '/attendance', 'See organization-wide attendance health.'],
-            ['Approve leave', '/leave', 'Resolve pending leave approvals quickly.'],
-          ].map(([title, path, text]) => (
-            <Link
-              key={title}
-              className="mb-3 block rounded border border-ink-650 bg-ink-800 p-4 transition hover:border-brand-400 hover:bg-ink-750"
-              to={path}
-            >
-              <h2 className="text-sm font-semibold text-steel-200 dark:text-white">{title}</h2>
-              <p className="mt-1 text-[12px] leading-5 text-steel-400">{text}</p>
-            </Link>
-          ))}
+            ['Invite employees', '/employees', 'Create users, assign department/designation, and send invite links.', ['admin', 'hr']],
+            ['Review payroll', '/payroll', 'Track pending salary records and mark payments as paid.', ['admin', 'hr']],
+            ['Audit attendance', '/attendance', 'See organization-wide attendance health.', ['admin', 'hr', 'manager']],
+            ['Approve leave', '/leave', 'Resolve pending leave approvals quickly.', ['admin', 'hr', 'manager']],
+          ]
+            .filter(([,,, roles]) => roles.includes(role))
+            .map(([title, path, text]) => (
+              <Link
+                key={title}
+                className="mb-3 block rounded border border-ink-650 bg-ink-800 p-4 transition hover:border-brand-400 hover:bg-ink-750"
+                to={path}
+              >
+                <h2 className="text-sm font-semibold text-steel-200 dark:text-white">{title}</h2>
+                <p className="mt-1 text-[12px] leading-5 text-steel-400">{text}</p>
+              </Link>
+            ))}
         </Panel>
       </section>
     </AppShell>

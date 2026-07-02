@@ -56,9 +56,17 @@ function Profile() {
       <AppShell title="My Profile">
         <div className="mx-auto max-w-2xl">
           <Panel className="flex flex-col items-center text-center py-12">
-            <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-brand-gradient text-3xl font-bold text-white shadow-xl">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
+            {user.profileImage ? (
+              <img
+                src={user.profileImage}
+                alt={user.name}
+                className="mb-4 h-24 w-24 rounded-full object-cover shadow-xl border-2 border-brand-500"
+              />
+            ) : (
+              <div className="mb-4 flex h-24 w-24 items-center justify-center rounded-full bg-brand-gradient text-3xl font-bold text-white shadow-xl">
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+            )}
             <h2 className="text-xl font-semibold text-steel-200">{user.name}</h2>
             <p className="text-steel-400">{user.email}</p>
             <span className="mt-3 inline-block rounded-full bg-brand-500/10 px-3 py-1 text-xs font-semibold text-brand-400 border border-brand-500/20">
@@ -81,9 +89,17 @@ function Profile() {
         
         {/* Top Header Card */}
         <Panel className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
-          <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-4xl font-bold text-white shadow-xl">
-            {profileData.user.name.charAt(0).toUpperCase()}
-          </div>
+          {profileData.profileImage || profileData.user?.profileImage ? (
+            <img
+              src={profileData.profileImage || profileData.user.profileImage}
+              alt={profileData.user.name}
+              className="h-28 w-28 shrink-0 rounded-full object-cover shadow-xl border-2 border-brand-500"
+            />
+          ) : (
+            <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-4xl font-bold text-white shadow-xl">
+              {profileData.user.name.charAt(0).toUpperCase()}
+            </div>
+          )}
           <div className="flex-1 text-center sm:text-left">
             <h2 className="text-2xl font-bold text-steel-200">{profileData.user.name}</h2>
             <p className="text-brand-300 font-medium">{profileData.designation?.title || 'No Designation'}</p>

@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
-import { getPayrolls, markPayrollPaid } from '../../services/hrms'
+import { getPayrolls, markPayrollPaid, addPayroll } from '../../services/hrms'
 
 // ─── Async Thunks ───────────────────────────────────────────────
 
@@ -23,6 +23,18 @@ export const markPaid = createAsyncThunk(
       return { payrollId, data }
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Payment update failed')
+    }
+  }
+)
+
+export const createPayroll = createAsyncThunk(
+  'payroll/create',
+  async (payload, { rejectWithValue }) => {
+    try {
+      const data = await addPayroll(payload)
+      return data.payroll
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Could not create payroll')
     }
   }
 )
@@ -67,6 +79,18 @@ const payrollSlice = createSlice({
         if (target) target.paymentStatus = 'paid'
       })
       .addCase(markPaid.rejected, (state, action) => {
+        state.actionLoading = false
+        state.error = action.payload
+      })
+
+    // Create payroll
+    builder
+      .addCase(createPayroll.pending, (state) => { state.actionLoading = true })
+      .addCase(createPayroll.fulfilled, (state, action) => {
+        state.actionLoading = false
+        state.payrolls.unshift(action.payload)
+      })
+      .addCase(createPayroll.rejected, (state, action) => {
         state.actionLoading = false
         state.error = action.payload
       })

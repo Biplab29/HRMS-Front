@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import Avatar from '../ui/Avatar.jsx'
 import StatusBadge from '../ui/StatusBadge.jsx'
 
-function PayrollTable({ records = [], loading = false, onMarkPaid }) {
+function PayrollTable({ records = [], loading = false, onMarkPaid, canManagePayroll = true }) {
   if (loading) {
     return (
       <div className="rounded border border-ink-650 bg-ink-900 p-6 text-center text-[12px] text-steel-400">
@@ -73,13 +73,15 @@ function PayrollTable({ records = [], loading = false, onMarkPaid }) {
                   >
                     <FiEye aria-hidden="true" />
                   </Link>
-                  <button
-                    className="icon-button"
-                    type="button"
-                    aria-label={`More actions for ${record.employee.name}`}
-                  >
-                    <FiMoreVertical aria-hidden="true" />
-                  </button>
+                  {canManagePayroll && (
+                    <button
+                      className="icon-button"
+                      type="button"
+                      aria-label={`More actions for ${record.employee.name}`}
+                    >
+                      <FiMoreVertical aria-hidden="true" />
+                    </button>
+                  )}
                 </div>
               </td>
             </tr>

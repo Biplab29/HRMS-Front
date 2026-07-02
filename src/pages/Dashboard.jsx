@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
+import { Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { FiClock, FiDownload, FiEye, FiFileText, FiGift, FiPlus, FiSun } from 'react-icons/fi'
 import AppShell from '../components/layout/AppShell.jsx'
@@ -8,10 +9,9 @@ import StatCard from '../components/ui/StatCard.jsx'
 import StatusBadge from '../components/ui/StatusBadge.jsx'
 import { fetchCurrentUser, selectSession } from '../store/slices/authSlice'
 import { clockIn, clockOut, fetchAttendance, selectAttendanceRecords } from '../store/slices/attendanceSlice'
-import { fetchLeaves, selectLeaves } from '../store/slices/leaveSlice'
+import { fetchLeaves, selectLeaves, openLeaveModal } from '../store/slices/leaveSlice'
 import { fetchPayrolls, selectPayrolls } from '../store/slices/payrollSlice'
 import Task from '../components/ui/Task.jsx'
-import LeaveApplicationModal from '../components/ui/LeaveApplicationModal.jsx'
 
 function Dashboard() {
   const dispatch = useDispatch()
@@ -19,8 +19,6 @@ function Dashboard() {
   const attendance = useSelector(selectAttendanceRecords) || []
   const leaves = useSelector(selectLeaves) || []
   const payrolls = useSelector(selectPayrolls) || []
-  
-  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
 
   useEffect(() => {
     dispatch(fetchCurrentUser())
@@ -73,21 +71,23 @@ function Dashboard() {
       date: new Date(l.createdAt || l.fromDate).toLocaleDateString(), 
       timestamp: new Date(l.createdAt || l.fromDate).getTime(),
       status: l.status === 'approved' ? 'Available' : 'Processing', 
-      action: 'view' 
+      action: 'view',
+      path: '/leave'
     })),
     ...payrolls.map(p => ({ 
       title: `Payroll: ${p.month}`, 
       date: new Date(p.createdAt || new Date()).toLocaleDateString(), 
       timestamp: new Date(p.createdAt || new Date()).getTime(),
       status: p.status === 'paid' ? 'Available' : 'Processing', 
-      action: 'download' 
+      action: 'download',
+      path: `/payroll/payslip/${p._id}`
     }))
   ].sort((a, b) => b.timestamp - a.timestamp).slice(0, 5)
 
   const finalActivities = liveActivities.length > 0 ? liveActivities : []
 
   return (
-    <AppShell title="Overview" search="Search requests, employee..." action={<button className="soft-button" type="button" onClick={() => setIsLeaveModalOpen(true)}><FiPlus /> New Request</button>}>
+    <AppShell title="Overview" search="Search requests, employee..." action={<button className="soft-button" type="button" onClick={() => dispatch(openLeaveModal())}><FiPlus /> Leave Request</button>}>
       <section className="rounded-lg border border-ink-650 bg-gradient-to-br from-ink-750 to-ink-800 p-6 shadow-insetLine">
         <h1 className="page-title">{greeting}, {userName}.</h1>
         <p className="mt-2 max-w-2xl text-[12px] leading-5 text-steel-400">
@@ -96,7 +96,7 @@ function Dashboard() {
         <div className="mt-4 flex flex-wrap gap-3">
           <button className="primary-button h-8" type="button" onClick={handleClockIn}><FiClock /> Clock In</button>
           <button className="soft-button h-8" type="button" onClick={handleClockOut}><FiClock /> Clock Out</button>
-          <button className="soft-button" type="button" onClick={() => setIsLeaveModalOpen(true)}><FiPlus /> New Request</button>
+          <button className="soft-button" type="button" onClick={() => dispatch(openLeaveModal())}><FiPlus /> Leave Request</button>
         </div>
       </section>
 
@@ -149,9 +149,9 @@ function Dashboard() {
                     <td className="px-3 py-4"><StatusBadge tone={item.status === 'Available' ? 'success' : 'brand'}>{item.status}</StatusBadge></td>
                     <td className="px-3 py-4">
                       <div className="flex justify-end">
-                        <button className="icon-button" type="button" aria-label={item.action}>
+                        <Link to={item.path} className="icon-button flex items-center justify-center" aria-label={item.action}>
                           {item.action === 'download' ? <FiDownload /> : <FiEye />}
-                        </button>
+                        </Link>
                       </div>
                     </td>
                   </tr>
@@ -161,8 +161,6 @@ function Dashboard() {
           </div>
         </Panel>
       </section>
-
-      <LeaveApplicationModal isOpen={isLeaveModalOpen} onClose={() => setIsLeaveModalOpen(false)} />
     </AppShell>
   )
 }

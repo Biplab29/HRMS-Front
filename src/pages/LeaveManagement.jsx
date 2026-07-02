@@ -13,11 +13,11 @@ import {
   rejectLeaveById,
   selectLeaveLoading,
   selectLeaves,
+  openLeaveModal,
 } from '../store/slices/leaveSlice'
 import { selectSession, selectUser } from '../store/slices/authSlice'
 import FlowStep from '../components/ui/FlowStep.jsx'
 import Quota from '../components/ui/Quota.jsx'
-import LeaveApplicationModal from '../components/ui/LeaveApplicationModal.jsx'
 
 const formatTitle = (value) =>
   String(value || '')
@@ -88,7 +88,6 @@ function LeaveManagement() {
   const currentUser = useSelector(selectUser)
   const userRole = session?.user?.role || currentUser?.role
   const isApprover = userRole === 'admin' || userRole === 'hr' || userRole === 'manager'
-  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
 
 
   useEffect(() => {
@@ -207,11 +206,10 @@ function LeaveManagement() {
         className="fixed bottom-6 right-6 flex h-14 w-14 items-center justify-center rounded-full bg-brand-300 text-xl text-ink-950 shadow-console transition hover:bg-brand-400" 
         type="button" 
         aria-label="Create leave request"
-        onClick={() => setIsLeaveModalOpen(true)}
+        onClick={() => dispatch(openLeaveModal())}
       >
         <FiPlus aria-hidden="true" />
       </button>
-      <LeaveApplicationModal isOpen={isLeaveModalOpen} onClose={() => setIsLeaveModalOpen(false)} />
     </AppShell>
   )
 }

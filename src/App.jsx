@@ -7,6 +7,7 @@ import AdminDashboard from './pages/AdminDashboard.jsx'
 import Attendance from './pages/Attendance.jsx'
 import EmployeeDashboard from './pages/EmployeeDashboard.jsx'
 import Employees from './pages/Employees.jsx'
+import Home from './pages/Home.jsx'
 import LeaveManagement from './pages/LeaveManagement.jsx'
 import Login from './pages/Login.jsx'
 import Payroll from './pages/Payroll.jsx'
@@ -17,6 +18,8 @@ import Settings from './pages/Settings.jsx'
 import Profile from './pages/Profile.jsx'
 import Signup from './pages/Signup.jsx'
 import Tasks from './pages/Tasks.jsx'
+import ForgotPassword from './pages/ForgotPassword.jsx'
+import ResetPassword from './pages/ResetPassword.jsx'
 
 function App() {
   const dispatch = useDispatch()
@@ -29,7 +32,10 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<Login />} />
+      <Route path="/" element={<Home />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/accept-invite" element={<AcceptInvite />} />
       <Route path="/dashboard" element={<RoleDashboardRedirect />} />

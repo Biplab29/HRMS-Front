@@ -1,4 +1,28 @@
-function LineChart({ compact = false }) {
+function LineChart({ 
+  data = [218, 196, 185, 105, 142, 130, 72], 
+  labels = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL'], 
+  compact = false 
+}) {
+  const maxVal = Math.max(...data, 10)
+  
+  const points = data.map((val, idx) => {
+    const x = 35 + idx * (655 / Math.max(data.length - 1, 1))
+    const y = 250 - (val / maxVal) * 180
+    return { x, y }
+  })
+
+  let linePath = ""
+  if (points.length > 0) {
+    linePath = `M ${points[0].x} ${points[0].y}`
+    for (let i = 1; i < points.length; i++) {
+      linePath += ` L ${points[i].x} ${points[i].y}`
+    }
+  }
+
+  const areaPath = points.length > 0 
+    ? `${linePath} L ${points[points.length - 1].x} 260 L ${points[0].x} 260 Z`
+    : ""
+
   return (
     <svg
       className={compact ? 'h-52 w-full text-brand-400' : 'h-72 w-full text-brand-400'}
@@ -12,33 +36,63 @@ function LineChart({ compact = false }) {
           <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
         </linearGradient>
       </defs>
+      
       <g stroke="#2d3543" strokeWidth="1">
         {[70, 120, 170, 220, 270].map((y) => (
           <line key={y} x1="35" x2="690" y1={y} y2={y} />
         ))}
       </g>
-      <path
-        d="M38 218 C120 196 158 198 220 185 C300 168 324 107 405 105 C482 104 500 158 568 142 C620 130 650 104 690 72 L690 260 L38 260 Z"
-        fill="url(#lineFill)"
-      />
-      <path
-        d="M38 218 C120 196 158 198 220 185 C300 168 324 107 405 105 C482 104 500 158 568 142 C620 130 650 104 690 72"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3"
-      />
-      <path
-        d="M38 218 C128 206 214 190 296 180 C386 170 452 136 534 128 C598 123 643 116 690 96"
-        fill="none"
-        stroke="#9fb9ff"
-        strokeDasharray="5 6"
-        strokeWidth="2"
-      />
-      {['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG'].map((month, index) => (
-        <text key={month} x={42 + index * 92} y="286" fill="#97a3b4" fontSize="11">
-          {month}
-        </text>
+      
+      {areaPath && (
+        <path d={areaPath} fill="url(#lineFill)" />
+      )}
+      
+      {linePath && (
+        <path
+          d={linePath}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+        />
+      )}
+
+      {points.map((pt, idx) => (
+        <g key={idx} className="group cursor-pointer">
+          <circle
+            cx={pt.x}
+            cy={pt.y}
+            r="4"
+            fill="currentColor"
+            stroke="#0a0f1d"
+            strokeWidth="2"
+          />
+          <circle
+            cx={pt.x}
+            cy={pt.y}
+            r="8"
+            fill="currentColor"
+            opacity="0"
+            className="hover:opacity-20 transition-opacity"
+          />
+          <title>{labels[idx]}: {data[idx]} Employee{data[idx] !== 1 ? 's' : ''}</title>
+        </g>
       ))}
+
+      {labels.map((month, index) => {
+        const x = 35 + index * (655 / Math.max(labels.length - 1, 1))
+        return (
+          <text 
+            key={`${month}-${index}`} 
+            x={x} 
+            y="286" 
+            fill="#97a3b4" 
+            fontSize="10" 
+            textAnchor="middle"
+          >
+            {month}
+          </text>
+        )
+      })}
     </svg>
   )
 }

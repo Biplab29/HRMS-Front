@@ -18,6 +18,7 @@ import Brand from '../ui/Brand.jsx'
 import { navItems } from '../../data/navConfig.js'
 import { logoutUser, selectUser } from '../../store/slices/authSlice.js'
 import { getDashboardPath, getStoredUser } from '../../utils/roleRoutes.js'
+import { openLeaveModal } from '../../store/slices/leaveSlice'
 
 const iconMap = {
   FiGrid,
@@ -45,9 +46,13 @@ function Sidebar() {
     <aside className="flex min-h-screen flex-col border-r border-white/5 bg-ink-900/30 backdrop-blur-2xl px-4 py-5 md:sticky md:top-0 transition-all duration-300">
       <Brand />
 
-      <button className="primary-button mt-8 w-full" type="button">
+      <button 
+        className="primary-button mt-8 w-full" 
+        type="button"
+        onClick={() => dispatch(openLeaveModal())}
+      >
         <FiPlus aria-hidden="true" />
-        New Request
+        Leave Request
       </button>
 
       <nav className="mt-8 flex flex-1 flex-col gap-1.5" aria-label="Main navigation">
@@ -61,6 +66,9 @@ function Sidebar() {
           const path =
             item.label === 'Dashboard' ? getDashboardPath(user?.role) : item.path
 
+          const isManagerOrAdmin = user?.role === 'admin' || user?.role === 'hr'
+          const label = item.label === 'Payroll' && !isManagerOrAdmin ? 'My Payslips' : item.label
+
           return (
             <NavLink
               key={item.label}
@@ -68,7 +76,7 @@ function Sidebar() {
               to={path}
             >
               <Icon aria-hidden="true" size={18} />
-              <span>{item.label}</span>
+              <span>{label}</span>
             </NavLink>
           )
         })}

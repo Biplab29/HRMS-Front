@@ -5,6 +5,18 @@ function Avatar({ person, size = 'md' }) {
     lg: 'h-11 w-11 text-[12px]',
   }
 
+  const imageUrl = person.image || person.profileImage
+
+  if (imageUrl) {
+    return (
+      <img
+        src={imageUrl}
+        alt={person.name}
+        className={`shrink-0 rounded-full object-cover ${sizes[size]} shadow-lg ring-2 ring-ink-900 transition-transform duration-300 hover:scale-110 hover:shadow-brand-500/50`}
+      />
+    )
+  }
+
   return (
     <span
       className={`flex shrink-0 items-center justify-center rounded-full bg-brand-gradient ${sizes[size]} font-bold text-steel-200 dark:text-white shadow-lg ring-2 ring-ink-900 transition-transform duration-300 hover:scale-110 hover:shadow-brand-500/50`}

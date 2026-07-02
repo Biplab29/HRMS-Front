@@ -60,10 +60,17 @@ const leaveSlice = createSlice({
     loading: false,
     actionLoading: false,
     error: null,
+    isModalOpen: false,
   },
   reducers: {
     clearLeaveError(state) {
       state.error = null
+    },
+    openLeaveModal(state) {
+      state.isModalOpen = true
+    },
+    closeLeaveModal(state) {
+      state.isModalOpen = false
     },
   },
   extraReducers: (builder) => {
@@ -119,12 +126,13 @@ const leaveSlice = createSlice({
   },
 })
 
-export const { clearLeaveError } = leaveSlice.actions
+export const { clearLeaveError, openLeaveModal, closeLeaveModal } = leaveSlice.actions
 
 // ─── Selectors ───────────────────────────────────────────────────
 export const selectLeaves = (state) => state.leave.leaves
 export const selectLeaveLoading = (state) => state.leave.loading
 export const selectLeaveActionLoading = (state) => state.leave.actionLoading
 export const selectLeaveError = (state) => state.leave.error
+export const selectIsLeaveModalOpen = (state) => state.leave.isModalOpen
 
 export default leaveSlice.reducer

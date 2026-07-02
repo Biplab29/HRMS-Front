@@ -1,12 +1,16 @@
-import { useSelector } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { selectSession } from '../../store/slices/authSlice.js'
 import Sidebar from './Sidebar.jsx'
 import Topbar from './Topbar.jsx'
 import OnboardingModal from '../ui/OnboardingModal.jsx'
 import Footer from './Footer.jsx'
+import LeaveApplicationModal from '../ui/LeaveApplicationModal.jsx'
+import { closeLeaveModal, selectIsLeaveModalOpen } from '../../store/slices/leaveSlice'
 
 function AppShell({ children, title, search, action }) {
+  const dispatch = useDispatch()
   const session = useSelector(selectSession)
+  const isLeaveModalOpen = useSelector(selectIsLeaveModalOpen)
   
   // Show modal if user is an employee/manager and onboarding is NOT completed
   const showOnboarding = session?.user?.role !== 'admin' && 
@@ -33,6 +37,7 @@ function AppShell({ children, title, search, action }) {
           <Footer />
         </div>
       </div>
+      <LeaveApplicationModal isOpen={isLeaveModalOpen} onClose={() => dispatch(closeLeaveModal())} />
     </div>
   )
 }

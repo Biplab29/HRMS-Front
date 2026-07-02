@@ -13,7 +13,7 @@ import {
   FiSun,
   FiUser,
 } from 'react-icons/fi'
-import { logoutUser, selectUser } from '../../store/slices/authSlice.js'
+import { logoutUser, selectUser, selectSession } from '../../store/slices/authSlice.js'
 import {
   fetchNotifications,
   markAsRead,
@@ -26,6 +26,7 @@ import { useTheme } from '../../context/ThemeContext.jsx'
 const roleMeta = {
   admin: { label: 'Administrator', color: 'bg-brand-500/15 text-brand-400 border-brand-500/20' },
   hr: { label: 'HR Manager', color: 'bg-brand-500/15 text-brand-400 border-brand-500/20' },
+  manager: { label: 'Manager', color: 'bg-amber-500/15 text-amber-400 border-amber-500/20' },
   employee: { label: 'Employee', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/20' },
 }
 
@@ -44,11 +45,13 @@ function Topbar({ title, search = 'Search...', action }) {
   const { theme, toggleTheme } = useTheme()
 
   const user = useSelector(selectUser) || getStoredUser()
+  const session = useSelector(selectSession)
   const role = user?.role || 'employee'
   const meta = roleMeta[role] || roleMeta.employee
   const displayName = user?.name || user?.username || 'User'
   const email = user?.email || ''
   const initials = getInitials(displayName)
+  const profileImageUrl = session?.user?.profileImage || session?.employee?.profileImage || user?.profileImage
 
   const [notifOpen, setNotifOpen] = useState(false)
   const notifRef = useRef(null)
@@ -79,7 +82,7 @@ function Topbar({ title, search = 'Search...', action }) {
   const handleLogout = async () => {
     setProfileOpen(false)
     await dispatch(logoutUser())
-    navigate('/')
+    navigate('/login')
   }
 
   const handleNotificationClick = (id) => {
@@ -171,12 +174,25 @@ function Topbar({ title, search = 'Search...', action }) {
             className="flex items-center gap-3 rounded-full border border-white/5 bg-ink-800/50 p-1 pr-3 transition-all hover:border-brand-500/30 hover:bg-ink-800 hover:shadow-glow"
           >
             {/* Avatar circle */}
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-xs font-bold text-steel-200 dark:text-white shadow-lg">
-              {initials}
-            </span>
-            <span className="hidden text-sm font-semibold text-steel-200 dark:text-white lg:block">
-              {displayName}
-            </span>
+            {profileImageUrl ? (
+              <img
+                src={profileImageUrl}
+                alt={displayName}
+                className="h-8 w-8 shrink-0 rounded-full object-cover shadow-lg border border-brand-500/20"
+              />
+            ) : (
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-xs font-bold text-steel-200 dark:text-white shadow-lg">
+                {initials}
+              </span>
+            )}
+            <div className="hidden lg:flex flex-col items-start leading-none text-left">
+              <span className="text-sm font-semibold text-steel-200 dark:text-white">
+                {displayName}
+              </span>
+              <span className="text-[10px] font-medium text-steel-400 mt-1 capitalize">
+                {role === 'hr' ? 'HR Manager' : role}
+              </span>
+            </div>
             <FiChevronDown
               aria-hidden="true"
               className={`hidden text-steel-400 transition-transform lg:block ${profileOpen ? 'rotate-180' : ''}`}
@@ -193,9 +209,17 @@ function Topbar({ title, search = 'Search...', action }) {
             >
               {/* Header */}
               <div className="flex items-center gap-4 border-b border-white/5 px-5 py-5">
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-base font-bold text-steel-200 dark:text-white shadow-lg">
-                  {initials}
-                </span>
+                    {profileImageUrl ? (
+                      <img
+                        src={profileImageUrl}
+                        alt={displayName}
+                        className="h-12 w-12 shrink-0 rounded-full object-cover shadow-lg border-2 border-brand-500/30"
+                      />
+                    ) : (
+                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-base font-bold text-steel-200 dark:text-white shadow-lg">
+                        {initials}
+                      </span>
+                    )}
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold text-steel-200 dark:text-white">
                     {displayName}
