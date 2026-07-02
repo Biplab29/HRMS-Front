@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { selectSession } from '../../store/slices/authSlice.js'
 import Sidebar from './Sidebar.jsx'
@@ -12,6 +13,8 @@ function AppShell({ children, title, search, action }) {
   const session = useSelector(selectSession)
   const isLeaveModalOpen = useSelector(selectIsLeaveModalOpen)
   
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+
   // Show modal if user is an employee/manager and onboarding is NOT completed
   const showOnboarding = session?.user?.role !== 'admin' && 
                          session?.user?.role !== 'hr' && 
@@ -27,10 +30,17 @@ function AppShell({ children, title, search, action }) {
         <div className="absolute bottom-[-20%] left-[20%] w-[50%] h-[50%] rounded-full bg-brand-500/10 mix-blend-screen filter blur-[150px] animate-blob" style={{ animationDelay: '4s' }}></div>
       </div>
 
+      {isMobileSidebarOpen && (
+        <div 
+          onClick={() => setIsMobileSidebarOpen(false)} 
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300 md:hidden" 
+        />
+      )}
+
       <div className="relative z-10 grid min-h-screen md:grid-cols-[260px_minmax(0,1fr)]">
-        <Sidebar />
+        <Sidebar isOpen={isMobileSidebarOpen} onClose={() => setIsMobileSidebarOpen(false)} />
         <div className="min-w-0 flex flex-col h-screen overflow-y-auto">
-          <Topbar title={title} search={search} action={action} />
+          <Topbar title={title} search={search} action={action} onToggleSidebar={() => setIsMobileSidebarOpen(true)} />
           <main className="mx-auto w-full flex-1 max-w-[1200px] px-6 py-8 animate-fade-in">
             {children}
           </main>

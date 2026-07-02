@@ -13,6 +13,7 @@ import {
   FiPlus,
   FiSettings,
   FiUsers,
+  FiX,
 } from 'react-icons/fi'
 import Brand from '../ui/Brand.jsx'
 import { navItems } from '../../data/navConfig.js'
@@ -32,7 +33,7 @@ const iconMap = {
   FiSettings,
 }
 
-function Sidebar() {
+function Sidebar({ isOpen, onClose }) {
   const navigate = useNavigate()
   const dispatch = useDispatch()
   const user = useSelector(selectUser) || getStoredUser()
@@ -43,8 +44,18 @@ function Sidebar() {
   }
 
   return (
-    <aside className="flex min-h-screen flex-col border-r border-white/5 bg-ink-900/30 backdrop-blur-2xl px-4 py-5 md:sticky md:top-0 transition-all duration-300">
-      <Brand />
+    <aside className={`fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col border-r border-white/5 bg-ink-900/95 backdrop-blur-2xl px-4 py-5 transition-transform duration-300 ease-in-out md:sticky md:top-0 md:z-auto md:flex md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+      <div className="flex items-center justify-between">
+        <Brand />
+        <button
+          onClick={onClose}
+          className="rounded-lg border border-white/5 bg-ink-950 p-2 text-steel-400 hover:text-white md:hidden"
+          type="button"
+          aria-label="Close sidebar"
+        >
+          <FiX size={18} />
+        </button>
+      </div>
 
       <button 
         className="primary-button mt-8 w-full" 

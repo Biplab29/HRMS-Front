@@ -12,6 +12,7 @@ import {
   FiShield,
   FiSun,
   FiUser,
+  FiMenu,
 } from 'react-icons/fi'
 import { logoutUser, selectUser, selectSession } from '../../store/slices/authSlice.js'
 import {
@@ -37,7 +38,7 @@ function getInitials(name) {
   return parts[0][0].toUpperCase()
 }
 
-function Topbar({ title, search = 'Search...', action }) {
+function Topbar({ title, search = 'Search...', action, onToggleSidebar }) {
   const [profileOpen, setProfileOpen] = useState(false)
   const dropdownRef = useRef(null)
   const dispatch = useDispatch()
@@ -92,7 +93,15 @@ function Topbar({ title, search = 'Search...', action }) {
   return (
     <header className="sticky top-0 z-40 flex min-h-[64px] flex-col gap-3 border-b border-white/5 bg-ink-900/40 backdrop-blur-2xl px-6 py-3 lg:flex-row lg:items-center lg:justify-between transition-all duration-300">
       {/* Left: title + search */}
-      <div className="flex min-w-0 flex-1 items-center gap-6">
+      <div className="flex min-w-0 flex-1 items-center gap-4">
+        <button
+          onClick={onToggleSidebar}
+          className="rounded-lg border border-white/5 bg-ink-950 p-2 text-steel-400 hover:text-white md:hidden"
+          type="button"
+          aria-label="Toggle sidebar"
+        >
+          <FiMenu size={18} />
+        </button>
         {title && (
           <h2 className="hidden whitespace-nowrap font-display text-lg font-bold text-steel-200 dark:text-white xl:block">
             {title}
