@@ -44,7 +44,7 @@ function Sidebar({ isOpen, onClose }) {
   }
 
   return (
-    <aside className={`fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col border-r border-white/5 bg-ink-900/95 backdrop-blur-2xl px-4 py-5 transition-transform duration-300 ease-in-out overflow-y-auto md:sticky md:top-0 md:z-auto md:h-screen md:flex md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+    <aside className={`fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col border-r border-white/5 bg-ink-900/95 backdrop-blur-2xl px-4 py-5 transition-transform duration-300 ease-in-out overflow-y-auto h-screen max-h-screen md:sticky md:top-0 md:z-auto md:h-screen md:max-h-screen md:flex md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       <div className="flex items-center justify-between">
         <Brand />
         <button
@@ -60,7 +60,10 @@ function Sidebar({ isOpen, onClose }) {
       <button 
         className="primary-button mt-8 w-full" 
         type="button"
-        onClick={() => dispatch(openLeaveModal())}
+        onClick={() => {
+          dispatch(openLeaveModal())
+          onClose()
+        }}
       >
         <FiPlus aria-hidden="true" />
         Leave Request
@@ -85,6 +88,7 @@ function Sidebar({ isOpen, onClose }) {
               key={item.label}
               className={({ isActive }) => `nav-item ${isActive ? 'nav-item-active' : ''}`}
               to={path}
+              onClick={onClose}
             >
               <Icon aria-hidden="true" size={18} />
               <span>{label}</span>
@@ -94,11 +98,11 @@ function Sidebar({ isOpen, onClose }) {
       </nav>
 
       <div className="mt-8 border-t border-white/5 pt-4">
-        <a className="nav-item" href="#support">
+        <a className="nav-item" href="#support" onClick={onClose}>
           <FiLifeBuoy aria-hidden="true" size={18} />
           <span>Support</span>
         </a>
-        <button className="nav-item w-full" type="button" onClick={handleLogout}>
+        <button className="nav-item w-full" type="button" onClick={() => { handleLogout(); onClose(); }}>
           <FiLogOut aria-hidden="true" size={18} className="text-danger" />
           <span className="text-danger">Logout</span>
         </button>
