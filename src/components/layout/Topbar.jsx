@@ -96,7 +96,7 @@ function Topbar({ title, search = 'Search...', action, onToggleSidebar }) {
       <div className="flex min-w-0 flex-1 items-center gap-4">
         <button
           onClick={onToggleSidebar}
-          className="rounded-lg border border-white/5 bg-ink-950 p-2 text-steel-400 hover:text-white md:hidden"
+          className="rounded-lg border border-white/5 bg-ink-950 p-2 text-steel-400 hover:text-white lg:hidden"
           type="button"
           aria-label="Toggle sidebar"
         >

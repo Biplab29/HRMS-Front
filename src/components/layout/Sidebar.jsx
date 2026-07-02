@@ -44,12 +44,12 @@ function Sidebar({ isOpen, onClose }) {
   }
 
   return (
-    <aside className={`fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col border-r border-white/5 bg-ink-900/95 backdrop-blur-2xl px-4 py-5 transition-transform duration-300 ease-in-out overflow-y-auto h-screen max-h-screen md:sticky md:top-0 md:z-auto md:h-screen md:max-h-screen md:flex md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+    <aside className={`fixed inset-y-0 left-0 z-50 flex w-[260px] flex-col border-r border-white/5 bg-ink-900/95 backdrop-blur-2xl px-4 py-5 transition-transform duration-300 ease-in-out overflow-y-auto h-screen max-h-screen lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:max-h-screen lg:flex lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       <div className="flex items-center justify-between">
         <Brand />
         <button
           onClick={onClose}
-          className="rounded-lg border border-white/5 bg-ink-950 p-2 text-steel-400 hover:text-white md:hidden"
+          className="rounded-lg border border-white/5 bg-ink-950 p-2 text-steel-400 hover:text-white lg:hidden"
           type="button"
           aria-label="Close sidebar"
         >
