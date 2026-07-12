@@ -72,7 +72,7 @@ function Sidebar({ isOpen, onClose }) {
       <nav className="mt-8 flex flex-1 flex-col gap-1.5" aria-label="Main navigation">
         {navItems
           .filter((item) => {
-            if (user?.role === 'employee' && item.label === 'Employees') return false;
+            if (user?.role === 'employee' && (item.label === 'Employees' || item.label === 'Reports')) return false;
             return true;
           })
           .map((item) => {

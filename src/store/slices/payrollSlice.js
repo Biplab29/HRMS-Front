@@ -1,5 +1,5 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
-import { getPayrolls, markPayrollPaid, addPayroll } from '../../services/hrms'
+import { getPayrolls, markPayrollPaid, addPayroll, updatePayroll as updatePayrollApi, deletePayroll as deletePayrollApi } from '../../services/hrms'
 
 // ─── Async Thunks ───────────────────────────────────────────────
 
@@ -35,6 +35,30 @@ export const createPayroll = createAsyncThunk(
       return data.payroll
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Could not create payroll')
+    }
+  }
+)
+
+export const editPayroll = createAsyncThunk(
+  'payroll/edit',
+  async ({ payrollId, payrollData }, { rejectWithValue }) => {
+    try {
+      const data = await updatePayrollApi(payrollId, payrollData)
+      return data.payroll
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Could not update payroll')
+    }
+  }
+)
+
+export const removePayroll = createAsyncThunk(
+  'payroll/delete',
+  async (payrollId, { rejectWithValue }) => {
+    try {
+      await deletePayrollApi(payrollId)
+      return payrollId
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Could not delete payroll')
     }
   }
 )
@@ -91,6 +115,35 @@ const payrollSlice = createSlice({
         state.payrolls.unshift(action.payload)
       })
       .addCase(createPayroll.rejected, (state, action) => {
+        state.actionLoading = false
+        state.error = action.payload
+      })
+
+    // Edit payroll
+    builder
+      .addCase(editPayroll.pending, (state) => { state.actionLoading = true })
+      .addCase(editPayroll.fulfilled, (state, action) => {
+        state.actionLoading = false
+        if (action.payload) {
+          const index = state.payrolls.findIndex((p) => p._id === action.payload._id)
+          if (index !== -1) {
+            state.payrolls[index] = action.payload
+          }
+        }
+      })
+      .addCase(editPayroll.rejected, (state, action) => {
+        state.actionLoading = false
+        state.error = action.payload
+      })
+
+    // Delete payroll
+    builder
+      .addCase(removePayroll.pending, (state) => { state.actionLoading = true })
+      .addCase(removePayroll.fulfilled, (state, action) => {
+        state.actionLoading = false
+        state.payrolls = state.payrolls.filter((p) => p._id !== action.payload)
+      })
+      .addCase(removePayroll.rejected, (state, action) => {
         state.actionLoading = false
         state.error = action.payload
       })

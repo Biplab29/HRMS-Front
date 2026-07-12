@@ -14,10 +14,13 @@ import {
   selectLeaveLoading,
   selectLeaves,
   openLeaveModal,
+  selectLeaveActionLoading,
 } from '../store/slices/leaveSlice'
 import { selectSession, selectUser } from '../store/slices/authSlice'
+import GlobalLoader from '../components/ui/GlobalLoader.jsx'
 import FlowStep from '../components/ui/FlowStep.jsx'
 import Quota from '../components/ui/Quota.jsx'
+import PromptModal from '../components/ui/PromptModal.jsx'
 
 const formatTitle = (value) =>
   String(value || '')
@@ -75,6 +78,7 @@ const mapLeaveRequest = (leave) => {
     duration: `${formatDate(leave.fromDate)} - ${formatDate(leave.toDate)}`,
     days: `${days} ${days === 1 ? 'Day' : 'Days'}`,
     reason: leave.reason,
+    rejectionReason: leave.rejectionReason,
     status: formatTitle(leave.status),
     statusTone: getStatusTone(leave.status),
   }
@@ -84,11 +88,12 @@ function LeaveManagement() {
   const dispatch = useDispatch()
   const leaves = useSelector(selectLeaves)
   const loading = useSelector(selectLeaveLoading)
+  const actionLoading = useSelector(selectLeaveActionLoading)
   const session = useSelector(selectSession)
   const currentUser = useSelector(selectUser)
   const userRole = session?.user?.role || currentUser?.role
   const isApprover = userRole === 'admin' || userRole === 'hr' || userRole === 'manager'
-
+  const [rejectLeaveId, setRejectLeaveId] = useState(null)
 
   useEffect(() => {
     dispatch(fetchLeaves())
@@ -111,14 +116,8 @@ function LeaveManagement() {
     }
   }
 
-  const handleReject = async (leaveId) => {
-    const toastId = toast.loading('Rejecting leave...')
-    const result = await dispatch(rejectLeaveById(leaveId))
-    if (rejectLeaveById.fulfilled.match(result)) {
-      toast.success('Leave rejected', { id: toastId })
-    } else {
-      toast.error(result.payload || 'Reject failed', { id: toastId })
-    }
+  const handleReject = (leaveId) => {
+    setRejectLeaveId(leaveId)
   }
 
 
@@ -131,11 +130,13 @@ function LeaveManagement() {
           className="primary-button"
           type="button"
           onClick={reload}
+          title="Refresh"
         >
-          <FiRefreshCw /> Refresh API
+          <FiRefreshCw />
         </button>
       }
     >
+      {actionLoading && <GlobalLoader message="Updating leave status..." />}
       <section className="grid gap-4 md:grid-cols-4">
         <StatCard label="Pending Requests" value={String(pendingCount)} subtext="Live API" />
         <StatCard label="Approved Leaves" value={String(approvedCount)} subtext="All time" tone="success" />
@@ -210,6 +211,23 @@ function LeaveManagement() {
       >
         <FiPlus aria-hidden="true" />
       </button>
+      <PromptModal
+        isOpen={rejectLeaveId !== null}
+        title="Reject Leave Request"
+        message="Enter the reason for rejection:"
+        placeholder="Reason..."
+        onConfirm={async (reason) => {
+          const toastId = toast.loading('Rejecting leave...')
+          const result = await dispatch(rejectLeaveById({ id: rejectLeaveId, rejectionReason: reason }))
+          setRejectLeaveId(null)
+          if (rejectLeaveById.fulfilled.match(result)) {
+            toast.success('Leave rejected', { id: toastId })
+          } else {
+            toast.error(result.payload || 'Reject failed', { id: toastId })
+          }
+        }}
+        onCancel={() => setRejectLeaveId(null)}
+      />
     </AppShell>
   )
 }

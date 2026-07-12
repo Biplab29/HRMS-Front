@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 import toast from 'react-hot-toast'
 import { FiX, FiCheck } from 'react-icons/fi'
-import { createPayroll } from '../../store/slices/payrollSlice'
+import { createPayroll, editPayroll } from '../../store/slices/payrollSlice'
 import Field from './Field.jsx'
 
-function PayrollModal({ isOpen, onClose, employees = [] }) {
+function PayrollModal({ isOpen, onClose, employees = [], editingRecord = null }) {
   const dispatch = useDispatch()
   const [submitting, setSubmitting] = useState(false)
   const [formData, setFormData] = useState({
@@ -19,21 +19,31 @@ function PayrollModal({ isOpen, onClose, employees = [] }) {
   // Format month to "Month Year" (e.g. "July 2026")
   useEffect(() => {
     if (isOpen) {
-      const now = new Date()
-      const months = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
-      ]
-      const currentMonthYear = `${months[now.getMonth()]} ${now.getFullYear()}`
-      setFormData({
-        employee: '',
-        month: currentMonthYear,
-        basicSalary: '',
-        bonus: '0',
-        deduction: '0',
-      })
+      if (editingRecord) {
+        setFormData({
+          employee: editingRecord.employee?._id || editingRecord.employee || '',
+          month: editingRecord.month || '',
+          basicSalary: String(editingRecord.basicSalary || ''),
+          bonus: String(editingRecord.bonus || '0'),
+          deduction: String(editingRecord.deduction || '0'),
+        })
+      } else {
+        const now = new Date()
+        const months = [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+        ]
+        const currentMonthYear = `${months[now.getMonth()]} ${now.getFullYear()}`
+        setFormData({
+          employee: '',
+          month: currentMonthYear,
+          basicSalary: '',
+          bonus: '0',
+          deduction: '0',
+        })
+      }
     }
-  }, [isOpen])
+  }, [isOpen, editingRecord])
 
   if (!isOpen) return null
 
@@ -66,22 +76,34 @@ function PayrollModal({ isOpen, onClose, employees = [] }) {
     }
 
     setSubmitting(true)
-    const toastId = toast.loading("Generating payroll...")
+    const toastId = toast.loading(editingRecord ? "Updating payroll..." : "Generating payroll...")
     
-    const result = await dispatch(createPayroll({
-      employee: formData.employee,
-      month: formData.month,
-      basicSalary: Number(formData.basicSalary),
-      bonus: Number(formData.bonus),
-      deduction: Number(formData.deduction),
-    }))
+    let result
+    if (editingRecord) {
+      result = await dispatch(editPayroll({
+        payrollId: editingRecord._id,
+        payrollData: {
+          basicSalary: Number(formData.basicSalary),
+          bonus: Number(formData.bonus),
+          deduction: Number(formData.deduction),
+        }
+      }))
+    } else {
+      result = await dispatch(createPayroll({
+        employee: formData.employee,
+        month: formData.month,
+        basicSalary: Number(formData.basicSalary),
+        bonus: Number(formData.bonus),
+        deduction: Number(formData.deduction),
+      }))
+    }
 
     setSubmitting(false)
-    if (createPayroll.fulfilled.match(result)) {
-      toast.success("Payroll record generated successfully", { id: toastId })
+    if (editingRecord ? editPayroll.fulfilled.match(result) : createPayroll.fulfilled.match(result)) {
+      toast.success(editingRecord ? "Payroll record updated successfully" : "Payroll record generated successfully", { id: toastId })
       onClose()
     } else {
-      toast.error(result.payload || "Failed to generate payroll", { id: toastId })
+      toast.error(result.payload || (editingRecord ? "Failed to update payroll" : "Failed to generate payroll"), { id: toastId })
     }
   }
 
@@ -93,7 +115,7 @@ function PayrollModal({ isOpen, onClose, employees = [] }) {
         aria-modal="true"
       >
         <header className="flex items-center justify-between border-b border-white/5 pb-4">
-          <h2 className="text-base font-bold text-white">Generate Employee Payroll</h2>
+          <h2 className="text-base font-bold text-white">{editingRecord ? "Edit Employee Payroll" : "Generate Employee Payroll"}</h2>
           <button 
             onClick={onClose} 
             className="icon-button"
@@ -109,8 +131,9 @@ function PayrollModal({ isOpen, onClose, employees = [] }) {
               name="employee"
               value={formData.employee}
               onChange={handleEmployeeChange}
-              className="field-dark mt-2 w-full"
+              className="field-dark mt-2 w-full disabled:opacity-50 disabled:cursor-not-allowed"
               required
+              disabled={editingRecord !== null}
             >
               <option value="">Select employee</option>
               {employees.map(emp => (
@@ -128,8 +151,9 @@ function PayrollModal({ isOpen, onClose, employees = [] }) {
               value={formData.month}
               onChange={handleChange}
               placeholder="e.g. July 2026"
-              className="field-dark mt-2 w-full"
+              className="field-dark mt-2 w-full disabled:opacity-50 disabled:cursor-not-allowed"
               required
+              disabled={editingRecord !== null}
             />
           </Field>
 
@@ -198,7 +222,7 @@ function PayrollModal({ isOpen, onClose, employees = [] }) {
               className="primary-button h-10 px-4"
               disabled={submitting}
             >
-              <FiCheck /> Generate
+              <FiCheck /> {editingRecord ? "Update" : "Generate"}
             </button>
           </footer>
         </form>

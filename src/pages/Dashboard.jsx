@@ -65,23 +65,43 @@ function Dashboard() {
   const totalLeavesAllowed = 20;
   const leaveBalance = totalLeavesAllowed - usedLeaves;
 
+  const getStatusDetails = (status, type) => {
+    const s = String(status || '').toLowerCase()
+    if (type === 'leave') {
+      if (s === 'approved') return { label: 'Approved', tone: 'success' }
+      if (s === 'rejected') return { label: 'Rejected', tone: 'danger' }
+      return { label: 'Pending', tone: 'warning' }
+    } else {
+      if (s === 'paid') return { label: 'Paid', tone: 'success' }
+      return { label: 'Pending', tone: 'warning' }
+    }
+  }
+
   const liveActivities = [
-    ...leaves.map(l => ({ 
-      title: `Leave: ${l.type}`, 
-      date: new Date(l.createdAt || l.fromDate).toLocaleDateString(), 
-      timestamp: new Date(l.createdAt || l.fromDate).getTime(),
-      status: l.status === 'approved' ? 'Available' : 'Processing', 
-      action: 'view',
-      path: '/leave'
-    })),
-    ...payrolls.map(p => ({ 
-      title: `Payroll: ${p.month}`, 
-      date: new Date(p.createdAt || new Date()).toLocaleDateString(), 
-      timestamp: new Date(p.createdAt || new Date()).getTime(),
-      status: p.status === 'paid' ? 'Available' : 'Processing', 
-      action: 'download',
-      path: `/payroll/payslip/${p._id}`
-    }))
+    ...leaves.map(l => {
+      const details = getStatusDetails(l.status, 'leave')
+      return { 
+        title: `Leave: ${String(l.leaveType || '').charAt(0).toUpperCase() + String(l.leaveType || '').slice(1)}`, 
+        date: new Date(l.createdAt || l.fromDate).toLocaleDateString(), 
+        timestamp: new Date(l.createdAt || l.fromDate).getTime(),
+        status: details.label,
+        statusTone: details.tone,
+        action: 'view',
+        path: '/leave'
+      }
+    }),
+    ...payrolls.map(p => {
+      const details = getStatusDetails(p.paymentStatus || p.status, 'payroll')
+      return { 
+        title: `Payroll: ${p.month}`, 
+        date: new Date(p.createdAt || new Date()).toLocaleDateString(), 
+        timestamp: new Date(p.createdAt || new Date()).getTime(),
+        status: details.label,
+        statusTone: details.tone,
+        action: 'download',
+        path: `/payroll/payslip/${p._id}`
+      }
+    })
   ].sort((a, b) => b.timestamp - a.timestamp).slice(0, 5)
 
   const finalActivities = liveActivities.length > 0 ? liveActivities : []
@@ -146,7 +166,7 @@ function Dashboard() {
                       </div>
                     </td>
                     <td className="px-3 py-4 text-steel-400">{item.date}</td>
-                    <td className="px-3 py-4"><StatusBadge tone={item.status === 'Available' ? 'success' : 'brand'}>{item.status}</StatusBadge></td>
+                    <td className="px-3 py-4"><StatusBadge tone={item.statusTone || 'brand'}>{item.status}</StatusBadge></td>
                     <td className="px-3 py-4">
                       <div className="flex justify-end">
                         <Link to={item.path} className="icon-button flex items-center justify-center" aria-label={item.action}>

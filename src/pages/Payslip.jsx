@@ -99,9 +99,9 @@ function Payslip() {
               <FiFileText />
             </span>
             <div>
-              <h1 className="text-lg font-semibold text-steel-200 dark:text-white">HRMS Enterprise</h1>
+              <h1 className="text-lg font-semibold text-steel-200 dark:text-white">PeopleGrid</h1>
               <p className="text-[12px] text-steel-400">452 Tech Corridor, Silicon Valley, CA</p>
-              <p className="text-[12px] text-steel-400">contact@hrms-enterprise.io</p>
+              <p className="text-[12px] text-steel-400">contact@peoplegrid.io</p>
             </div>
           </div>
           <div className="text-right">
@@ -138,7 +138,7 @@ function Payslip() {
         </section>
 
         <footer className="mt-5 border-t border-ink-650 pt-5 text-[12px] text-steel-400">
-          <p>This payslip is generated from live HRMS API data.</p>
+          <p>This payslip is generated from live PeopleGrid API data.</p>
         </footer>
       </article>
     </AppShell>

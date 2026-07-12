@@ -247,8 +247,8 @@ export const approveLeave = async (leaveId) => {
 };
 
 /** PUT /leave/reject/:id — reject leave (admin / hr / manager) */
-export const rejectLeave = async (leaveId) => {
-  const { data } = await api.put(`/leave/reject/${leaveId}`);
+export const rejectLeave = async (leaveId, payload = {}) => {
+  const { data } = await api.put(`/leave/reject/${leaveId}`, payload);
   return data;
 };
 

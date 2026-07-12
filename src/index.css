@@ -132,3 +132,12 @@
     @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold tracking-wide border;
   }
 }
+
+/* Custom reset to remove inner borders from inputs nested inside icon wrapper containers */
+.flex.items-center.rounded-xl input {
+  border: none !important;
+  border-width: 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background-color: transparent !important;
+}

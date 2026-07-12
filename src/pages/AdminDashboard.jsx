@@ -103,32 +103,15 @@ function AdminDashboard() {
   }
   const controlCenterLabel = controlCenterLabels[role] || 'Control Center'
 
-  const deptCounts = {
-    engineering: 0,
-    marketing: 0,
-    sales: 0,
-    product: 0,
-    support: 0,
-  }
-
+  const departmentCounts = {}
   stats.employees.forEach((emp) => {
-    const deptName = emp.department?.departmentName?.toLowerCase().trim()
-    if (deptName) {
-      if (deptName.includes('eng')) deptCounts.engineering++
-      else if (deptName.includes('market')) deptCounts.marketing++
-      else if (deptName.includes('sale')) deptCounts.sales++
-      else if (deptName.includes('prod')) deptCounts.product++
-      else if (deptName.includes('supp')) deptCounts.support++
-    }
+    const deptName = emp.department?.departmentName || 'Unassigned'
+    departmentCounts[deptName] = (departmentCounts[deptName] || 0) + 1
   })
 
-  const departmentValues = [
-    deptCounts.engineering,
-    deptCounts.marketing,
-    deptCounts.sales,
-    deptCounts.product,
-    deptCounts.support,
-  ]
+  const sortedDepts = Object.entries(departmentCounts).sort((a, b) => b[1] - a[1])
+  const departmentLabels = sortedDepts.length > 0 ? sortedDepts.map(([name]) => name) : ['No Team']
+  const departmentValues = sortedDepts.length > 0 ? sortedDepts.map(([, count]) => count) : [0]
 
   return (
     <AppShell
@@ -158,7 +141,7 @@ function AdminDashboard() {
 
       <section className="mt-4 grid gap-4 lg:grid-cols-[1fr_360px]">
         <Panel title="Department Load" action={<span className="muted-label text-brand-300">Live employees</span>}>
-          <BarChart values={departmentValues} />
+          <BarChart values={departmentValues} labels={departmentLabels} />
         </Panel>
 
         <Panel title="Admin Actions" action={<FiShield className="text-brand-300" />}>

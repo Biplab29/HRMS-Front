@@ -13,6 +13,7 @@ import StatusBadge from '../components/ui/StatusBadge.jsx'
 import { fetchAllEmployeeData, selectEmployees, selectDepartments } from '../store/slices/employeeSlice'
 import { fetchPayrolls, selectPayrolls } from '../store/slices/payrollSlice'
 import { fetchLeaves, selectLeaves } from '../store/slices/leaveSlice'
+import { selectSession, selectUser } from '../store/slices/authSlice'
 
 function Reports() {
   const dispatch = useDispatch()
@@ -20,12 +21,28 @@ function Reports() {
   const departments = useSelector(selectDepartments)
   const payrolls = useSelector(selectPayrolls)
   const leaves = useSelector(selectLeaves)
+  const user = useSelector(selectUser)
+  const session = useSelector(selectSession)
+  const currentUser = user || session?.user
 
   useEffect(() => {
-    dispatch(fetchAllEmployeeData())
-    dispatch(fetchPayrolls())
-    dispatch(fetchLeaves())
-  }, [dispatch])
+    if (currentUser?.role !== 'employee') {
+      dispatch(fetchAllEmployeeData())
+      dispatch(fetchPayrolls())
+      dispatch(fetchLeaves())
+    }
+  }, [dispatch, currentUser])
+
+  if (currentUser?.role === 'employee') {
+    return (
+      <AppShell title="Access Denied" search="Search analytics...">
+        <div className="console-card p-8 text-center max-w-md mx-auto mt-10">
+          <h2 className="text-xl font-bold text-danger">Access Denied</h2>
+          <p className="text-sm text-steel-400 mt-2">You do not have permission to view reports and analytics.</p>
+        </div>
+      </AppShell>
+    )
+  }
 
   const totalHeadcount = employees.length
   

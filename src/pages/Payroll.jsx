@@ -7,9 +7,11 @@ import PayrollTable from '../components/tables/PayrollTable.jsx'
 import Panel from '../components/ui/Panel.jsx'
 import StatCard from '../components/ui/StatCard.jsx'
 import PayrollModal from '../components/ui/PayrollModal.jsx'
+import ConfirmModal from '../components/ui/ConfirmModal.jsx'
 import {
   fetchPayrolls,
   markPaid,
+  removePayroll,
   selectPayrollLoading,
   selectPayrolls,
 } from '../store/slices/payrollSlice'
@@ -67,6 +69,8 @@ function Payroll() {
   const canManagePayroll = userRole === 'admin' || userRole === 'hr'
 
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingRecord, setEditingRecord] = useState(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
 
   useEffect(() => {
     dispatch(fetchPayrolls())
@@ -76,6 +80,31 @@ function Payroll() {
   }, [dispatch, canManagePayroll])
 
   const reload = () => dispatch(fetchPayrolls())
+
+  const handleEdit = (payrollId) => {
+    const record = payrolls.find(p => p._id === payrollId)
+    if (record) {
+      setEditingRecord(record)
+      setIsModalOpen(true)
+    }
+  }
+
+  const handleDelete = (payrollId) => {
+    setConfirmDeleteId(payrollId)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!confirmDeleteId) return
+    const toastId = toast.loading("Deleting payroll...")
+    const result = await dispatch(removePayroll(confirmDeleteId))
+    setConfirmDeleteId(null)
+    if (removePayroll.fulfilled.match(result)) {
+      toast.success("Payroll record deleted successfully", { id: toastId })
+      reload()
+    } else {
+      toast.error(result.payload || "Failed to delete payroll record", { id: toastId })
+    }
+  }
 
   const records = payrolls.map(mapPayrollRecord)
   const totalPayroll = payrolls.reduce(
@@ -137,8 +166,9 @@ function Payroll() {
             className="primary-button"
             type="button"
             onClick={reload}
+            title="Refresh"
           >
-            <FiRefreshCw /> Refresh API
+            <FiRefreshCw />
           </button>
         )
       }
@@ -187,7 +217,7 @@ function Payroll() {
             <div className="flex gap-2">
               <button className="soft-button" type="button"><FiFilter /> Filter</button>
               <button className="soft-button" type="button" onClick={handleExportCSV}><FiDownload /> Export CSV</button>
-              <button className="soft-button" type="button" onClick={() => setIsModalOpen(true)}><FiPlay /> Generate Payroll</button>
+              <button className="soft-button" type="button" onClick={() => { setEditingRecord(null); setIsModalOpen(true); }}><FiPlay /> Generate Payroll</button>
             </div>
           ) : null
         }
@@ -196,13 +226,23 @@ function Payroll() {
           records={records}
           loading={loading}
           onMarkPaid={canManagePayroll ? handleMarkPaid : null}
+          onEdit={canManagePayroll ? handleEdit : null}
+          onDelete={canManagePayroll ? handleDelete : null}
           canManagePayroll={canManagePayroll}
         />
       </Panel>
       <PayrollModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => { setIsModalOpen(false); setEditingRecord(null); }}
         employees={employees}
+        editingRecord={editingRecord}
+      />
+      <ConfirmModal
+        isOpen={confirmDeleteId !== null}
+        title="Delete Payroll Record"
+        message="Are you sure you want to delete this payroll record? This action cannot be undone."
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmDeleteId(null)}
       />
     </AppShell>
   )

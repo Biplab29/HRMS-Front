@@ -56,7 +56,14 @@ function LeaveRequestTable({
                 <p>{request.duration}</p>
                 <p className="text-[11px] text-steel-500">{request.days}</p>
               </td>
-              <td className="px-4 py-5">{request.reason}</td>
+              <td className="px-4 py-5">
+                <p className="font-medium text-steel-200">{request.reason}</p>
+                {request.status?.toLowerCase() === 'rejected' && request.rejectionReason && (
+                  <p className="text-[10px] text-danger mt-1.5 font-medium border-t border-ink-800 dark:border-white/5 pt-1.5">
+                    Rejection Reason: {request.rejectionReason}
+                  </p>
+                )}
+              </td>
               <td className="px-4 py-5">
                 <StatusBadge tone={request.statusTone || 'warning'}>
                   {request.status || 'Pending'}

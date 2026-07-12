@@ -1,9 +1,9 @@
-import { FiCheckCircle, FiEye, FiMoreVertical } from 'react-icons/fi'
+import { FiCheckCircle, FiEye, FiEdit, FiTrash2 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import Avatar from '../ui/Avatar.jsx'
 import StatusBadge from '../ui/StatusBadge.jsx'
 
-function PayrollTable({ records = [], loading = false, onMarkPaid, canManagePayroll = true }) {
+function PayrollTable({ records = [], loading = false, onMarkPaid, onEdit, onDelete, canManagePayroll = true }) {
   if (loading) {
     return (
       <div className="rounded border border-ink-650 bg-ink-900 p-6 text-center text-[12px] text-steel-400">
@@ -74,13 +74,24 @@ function PayrollTable({ records = [], loading = false, onMarkPaid, canManagePayr
                     <FiEye aria-hidden="true" />
                   </Link>
                   {canManagePayroll && (
-                    <button
-                      className="icon-button"
-                      type="button"
-                      aria-label={`More actions for ${record.employee.name}`}
-                    >
-                      <FiMoreVertical aria-hidden="true" />
-                    </button>
+                    <>
+                      <button
+                        className="icon-button"
+                        type="button"
+                        aria-label={`Edit ${record.employee.name} payroll`}
+                        onClick={() => onEdit && onEdit(record._id)}
+                      >
+                        <FiEdit aria-hidden="true" />
+                      </button>
+                      <button
+                        className="icon-button"
+                        type="button"
+                        aria-label={`Delete ${record.employee.name} payroll`}
+                        onClick={() => onDelete && onDelete(record._id)}
+                      >
+                        <FiTrash2 aria-hidden="true" />
+                      </button>
+                    </>
                   )}
                 </div>
               </td>

@@ -102,7 +102,7 @@ function Signup() {
         <div className="hidden flex-col justify-center lg:flex text-left">
           <Link to="/" className="inline-flex w-max items-center gap-3 rounded-full border border-brand-500/20 bg-brand-500/10 px-5 py-2.5 text-brand-300 shadow-lg backdrop-blur-md mb-6">
             <FiShield size={16} />
-            <span className="text-xs font-bold tracking-wide uppercase">HRMS Enterprise Security</span>
+            <span className="text-xs font-bold tracking-wide uppercase">PeopleGrid Security</span>
           </Link>
 
           <h1 className="max-w-md bg-gradient-to-br from-white via-steel-200 to-steel-500 bg-clip-text text-4xl lg:text-5xl font-extrabold leading-[1.15] tracking-tight text-transparent">

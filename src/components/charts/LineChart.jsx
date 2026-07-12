@@ -32,12 +32,19 @@ function LineChart({
     >
       <defs>
         <linearGradient id="lineFill" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="currentColor" stopOpacity="0.18" />
-          <stop offset="100%" stopColor="currentColor" stopOpacity="0.02" />
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.00" />
         </linearGradient>
+        <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
       </defs>
       
-      <g stroke="#2d3543" strokeWidth="1">
+      <g stroke="rgba(255, 255, 255, 0.03)" strokeWidth="1">
         {[70, 120, 170, 220, 270].map((y) => (
           <line key={y} x1="35" x2="690" y1={y} y2={y} />
         ))}
@@ -46,14 +53,26 @@ function LineChart({
       {areaPath && (
         <path d={areaPath} fill="url(#lineFill)" />
       )}
-      
+
       {linePath && (
-        <path
-          d={linePath}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="3"
-        />
+        <>
+          {/* Outer glow stroke */}
+          <path
+            d={linePath}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="6"
+            opacity="0.3"
+            filter="url(#neonGlow)"
+          />
+          {/* Main stroke */}
+          <path
+            d={linePath}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3.5"
+          />
+        </>
       )}
 
       {points.map((pt, idx) => (

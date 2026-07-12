@@ -41,10 +41,12 @@ export const approveLeaveById = createAsyncThunk(
 
 export const rejectLeaveById = createAsyncThunk(
   'leave/reject',
-  async (leaveId, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
-      const data = await rejectLeave(leaveId)
-      return { leaveId, data }
+      const id = typeof payload === 'string' ? payload : payload.id
+      const rejectionReason = typeof payload === 'object' ? payload.rejectionReason : undefined
+      const data = await rejectLeave(id, { rejectionReason })
+      return { leaveId: id, data }
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Reject failed')
     }

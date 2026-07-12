@@ -43,6 +43,34 @@ export const updateTaskStatus = createAsyncThunk(
   },
 )
 
+export const deleteTask = createAsyncThunk(
+  'task/deleteTask',
+  async (taskId, { rejectWithValue }) => {
+    try {
+      await api.delete(`/task/${taskId}`)
+      return taskId
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to delete task',
+      )
+    }
+  },
+)
+
+export const editTask = createAsyncThunk(
+  'task/editTask',
+  async ({ taskId, taskData }, { rejectWithValue }) => {
+    try {
+      const response = await api.put(`/task/${taskId}`, taskData)
+      return response.data
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to edit task',
+      )
+    }
+  },
+)
+
 const taskSlice = createSlice({
   name: 'task',
   initialState: {
@@ -75,6 +103,17 @@ const taskSlice = createSlice({
         }
       })
       .addCase(updateTaskStatus.fulfilled, (state, action) => {
+        if (action.payload.task) {
+          const index = state.tasks.findIndex(t => t._id === action.payload.task._id)
+          if (index !== -1) {
+            state.tasks[index] = action.payload.task
+          }
+        }
+      })
+      .addCase(deleteTask.fulfilled, (state, action) => {
+        state.tasks = state.tasks.filter(t => t._id !== action.payload)
+      })
+      .addCase(editTask.fulfilled, (state, action) => {
         if (action.payload.task) {
           const index = state.tasks.findIndex(t => t._id === action.payload.task._id)
           if (index !== -1) {

@@ -121,7 +121,7 @@ function AcceptInvite() {
             <FiFileText aria-hidden="true" />
           </span>
           <p className="mt-5 text-sm font-semibold text-brand-300">
-            HRMS Enterprise
+            PeopleGrid
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-steel-200 dark:text-white">
             Accept your invite

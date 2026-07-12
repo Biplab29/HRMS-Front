@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import toast from 'react-hot-toast'
-import { FiCheckSquare, FiPlay, FiCheck, FiX, FiRefreshCw, FiPlus, FiClock } from 'react-icons/fi'
+import { FiCheckSquare, FiPlay, FiCheck, FiX, FiRefreshCw, FiPlus, FiClock, FiEdit, FiTrash2 } from 'react-icons/fi'
 import AppShell from '../components/layout/AppShell.jsx'
 import Panel from '../components/ui/Panel.jsx'
 import Field from '../components/ui/Field.jsx'
 import StatusBadge from '../components/ui/StatusBadge.jsx'
 import Avatar from '../components/ui/Avatar.jsx'
+import ConfirmModal from '../components/ui/ConfirmModal.jsx'
 import { selectSession, selectUser } from '../store/slices/authSlice'
-import { fetchTasks, createTask, updateTaskStatus, selectTasks, selectTaskLoading } from '../store/slices/taskSlice'
+import { fetchTasks, createTask, updateTaskStatus, deleteTask, editTask, selectTasks, selectTaskLoading } from '../store/slices/taskSlice'
 import { fetchAllEmployeeData, selectEmployees } from '../store/slices/employeeSlice'
 
 const getInitials = (name = 'Employee') =>
@@ -38,6 +39,8 @@ function Tasks() {
     assignedTo: '',
     deadline: '',
   })
+  const [editingTaskId, setEditingTaskId] = useState(null)
+  const [confirmDeleteTaskId, setConfirmDeleteTaskId] = useState(null)
 
   useEffect(() => {
     dispatch(fetchTasks())
@@ -48,21 +51,70 @@ function Tasks() {
 
   const reload = () => dispatch(fetchTasks())
 
-  const handleCreateTask = async (e) => {
+  const handleStartEdit = (task) => {
+    setEditingTaskId(task._id)
+    setFormData({
+      title: task.title,
+      description: task.description,
+      assignedTo: task.assignedTo?._id || '',
+      deadline: task.deadline ? task.deadline.split('T')[0] : '',
+    })
+    const panel = document.getElementById('assignTaskPanel')
+    if (panel) {
+      panel.scrollIntoView({ behavior: 'smooth' })
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingTaskId(null)
+    setFormData({ title: '', description: '', assignedTo: '', deadline: '' })
+  }
+
+  const handleDeleteTask = (taskId) => {
+    setConfirmDeleteTaskId(taskId)
+  }
+
+  const handleConfirmDeleteTask = async () => {
+    if (!confirmDeleteTaskId) return
+    const toastId = toast.loading("Deleting task...")
+    const result = await dispatch(deleteTask(confirmDeleteTaskId))
+    setConfirmDeleteTaskId(null)
+    if (deleteTask.fulfilled.match(result)) {
+      toast.success("Task deleted successfully", { id: toastId })
+      reload()
+    } else {
+      toast.error(result.payload || "Failed to delete task", { id: toastId })
+    }
+  }
+
+  const handleSubmitTask = async (e) => {
     e.preventDefault()
     if (!formData.title || !formData.description || !formData.assignedTo || !formData.deadline) {
       return toast.error("All fields are required")
     }
 
-    const toastId = toast.loading("Assigning task...")
-    const result = await dispatch(createTask(formData))
-    
-    if (createTask.fulfilled.match(result)) {
-      toast.success("Task assigned successfully", { id: toastId })
-      setFormData({ title: '', description: '', assignedTo: '', deadline: '' })
-      reload()
+    if (editingTaskId) {
+      const toastId = toast.loading("Updating task...")
+      const result = await dispatch(editTask({ taskId: editingTaskId, taskData: formData }))
+      
+      if (editTask.fulfilled.match(result)) {
+        toast.success("Task updated successfully", { id: toastId })
+        handleCancelEdit()
+        reload()
+      } else {
+        toast.error(result.payload || "Failed to update task", { id: toastId })
+      }
     } else {
-      toast.error(result.payload || "Failed to assign task", { id: toastId })
+      const toastId = toast.loading("Assigning task...")
+      const result = await dispatch(createTask(formData))
+      
+      if (createTask.fulfilled.match(result)) {
+        toast.success("Task assigned successfully", { id: toastId })
+        setFormData({ title: '', description: '', assignedTo: '', deadline: '' })
+        reload()
+      } else {
+        toast.error(result.payload || "Failed to assign task", { id: toastId })
+      }
     }
   }
 
@@ -92,8 +144,8 @@ function Tasks() {
     <AppShell
       title="Tasks"
       action={
-        <button className="primary-button" type="button" onClick={reload}>
-          <FiRefreshCw /> Refresh
+        <button className="primary-button" type="button" onClick={reload} title="Refresh">
+          <FiRefreshCw />
         </button>
       }
     >
@@ -149,26 +201,48 @@ function Tasks() {
                         </StatusBadge>
                       </td>
                       <td className="px-4 py-4 text-right">
-                        {isMyTask && task.status === 'pending' && (
-                          <div className="flex justify-end gap-2">
-                            <button className="h-8 rounded bg-brand-300 px-3 text-[11px] font-semibold text-ink-950 hover:bg-brand-400" onClick={() => handleStatusUpdate(task._id, 'accepted')}>
-                              Accept
+                        <div className="flex justify-end items-center gap-2">
+                          {isMyTask && task.status === 'pending' && (
+                            <>
+                              <button className="h-8 rounded bg-brand-300 px-3 text-[11px] font-semibold text-ink-950 hover:bg-brand-400" onClick={() => handleStatusUpdate(task._id, 'accepted')}>
+                                Accept
+                              </button>
+                              <button className="h-8 rounded border border-danger/70 px-3 text-[11px] font-semibold text-danger hover:bg-danger/10" onClick={() => handleStatusUpdate(task._id, 'rejected')}>
+                                Reject
+                              </button>
+                            </>
+                          )}
+                          {isMyTask && task.status === 'accepted' && (
+                            <button className="h-8 rounded bg-brand-300 px-3 text-[11px] font-semibold text-ink-950 hover:bg-brand-400" onClick={() => handleStatusUpdate(task._id, 'in-progress')}>
+                              <FiPlay className="inline mr-1" /> Start
                             </button>
-                            <button className="h-8 rounded border border-danger/70 px-3 text-[11px] font-semibold text-danger hover:bg-danger/10" onClick={() => handleStatusUpdate(task._id, 'rejected')}>
-                              Reject
+                          )}
+                          {isMyTask && task.status === 'in-progress' && (
+                            <button className="h-8 rounded bg-success px-3 text-[11px] font-semibold text-ink-950 hover:bg-success/90" onClick={() => handleStatusUpdate(task._id, 'completed')}>
+                              <FiCheck className="inline mr-1" /> Complete
                             </button>
-                          </div>
-                        )}
-                        {isMyTask && task.status === 'accepted' && (
-                          <button className="h-8 rounded bg-brand-300 px-3 text-[11px] font-semibold text-ink-950 hover:bg-brand-400" onClick={() => handleStatusUpdate(task._id, 'in-progress')}>
-                            <FiPlay className="inline mr-1" /> Start
-                          </button>
-                        )}
-                        {isMyTask && task.status === 'in-progress' && (
-                          <button className="h-8 rounded bg-success px-3 text-[11px] font-semibold text-ink-950 hover:bg-success/90" onClick={() => handleStatusUpdate(task._id, 'completed')}>
-                            <FiCheck className="inline mr-1" /> Complete
-                          </button>
-                        )}
+                          )}
+                          {(userRole === 'admin' || userRole === 'hr' || task.assignedBy?.user?._id === currentUserId) && (
+                            <>
+                              <button 
+                                className="h-7 w-7 flex items-center justify-center rounded bg-ink-800 border border-ink-650 hover:border-brand-400 hover:text-white text-steel-400 transition-colors" 
+                                type="button"
+                                title="Edit Task"
+                                onClick={() => handleStartEdit(task)}
+                              >
+                                <FiEdit size={13} />
+                              </button>
+                              <button 
+                                className="h-7 w-7 flex items-center justify-center rounded bg-ink-800 border border-ink-650 hover:border-danger hover:text-danger text-steel-400 transition-colors" 
+                                type="button"
+                                title="Delete Task"
+                                onClick={() => handleDeleteTask(task._id)}
+                              >
+                                <FiTrash2 size={13} />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )
@@ -185,8 +259,8 @@ function Tasks() {
 
         {isManagerOrAdmin && (
           <aside className="space-y-4">
-            <Panel title="Assign New Task" action={<FiCheckSquare className="text-brand-300" />}>
-              <form className="space-y-4" onSubmit={handleCreateTask}>
+            <Panel id="assignTaskPanel" title={editingTaskId ? "Edit Task" : "Assign New Task"} action={<FiCheckSquare className="text-brand-300" />}>
+              <form className="space-y-4" onSubmit={handleSubmitTask}>
                 <Field label="Task Title">
                   <input
                     className="field-dark mt-2 w-full"
@@ -226,14 +300,28 @@ function Tasks() {
                     onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
                   />
                 </Field>
-                <button className="primary-button h-10 w-full" type="submit">
-                  <FiPlus /> Assign Task
-                </button>
+                <div className="flex gap-2">
+                  {editingTaskId && (
+                    <button className="soft-button h-10 w-full" type="button" onClick={handleCancelEdit}>
+                      Cancel
+                    </button>
+                  )}
+                  <button className="primary-button h-10 w-full" type="submit">
+                    {editingTaskId ? <FiEdit /> : <FiPlus />} {editingTaskId ? "Update Task" : "Assign Task"}
+                  </button>
+                </div>
               </form>
             </Panel>
           </aside>
         )}
       </section>
+      <ConfirmModal
+        isOpen={confirmDeleteTaskId !== null}
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action cannot be undone."
+        onConfirm={handleConfirmDeleteTask}
+        onCancel={() => setConfirmDeleteTaskId(null)}
+      />
     </AppShell>
   )
 }

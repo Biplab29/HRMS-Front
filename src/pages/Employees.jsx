@@ -16,6 +16,7 @@ import AppShell from '../components/layout/AppShell.jsx'
 import Avatar from '../components/ui/Avatar.jsx'
 import Panel from '../components/ui/Panel.jsx'
 import StatusBadge from '../components/ui/StatusBadge.jsx'
+import ConfirmModal from '../components/ui/ConfirmModal.jsx'
 import {
   addDepartment,
   addDesignation,
@@ -115,14 +116,33 @@ function Employees() {
   const [designationForm, setDesignationForm] = useState(initialDesignationForm)
   const [setupLoading, setSetupLoading] = useState('')
   const [search, setSearch] = useState('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const [confirmDeleteName, setConfirmDeleteName] = useState("")
 
   const isEmployeeProfile = formData.role === 'employee' || formData.role === 'manager'
 
   useEffect(() => {
-    dispatch(fetchAllEmployeeData())
-  }, [dispatch])
+    if (userRole !== 'employee') {
+      dispatch(fetchAllEmployeeData())
+    }
+  }, [dispatch, userRole])
 
-  const reload = () => dispatch(fetchAllEmployeeData())
+  const reload = () => {
+    if (userRole !== 'employee') {
+      dispatch(fetchAllEmployeeData())
+    }
+  }
+
+  if (userRole === 'employee') {
+    return (
+      <AppShell title="Access Denied" search="Search employees...">
+        <div className="console-card p-8 text-center max-w-md mx-auto mt-10">
+          <h2 className="text-xl font-bold text-danger">Access Denied</h2>
+          <p className="text-sm text-steel-400 mt-2">You do not have permission to view the employee directory.</p>
+        </div>
+      </AppShell>
+    )
+  }
 
 
   const filteredDesignations = designations.filter((designation) => {
@@ -194,20 +214,28 @@ function Employees() {
     if (fileInput) fileInput.value = ''
   }
 
-  const handleDeleteEmployee = async (employeeId, name) => {
-    if (window.confirm(`Are you sure you want to delete ${name}?`)) {
-      const toastId = toast.loading('Deleting employee...')
-      try {
-        const result = await deleteEmployeeApi(employeeId)
-        if (result.success) {
-          toast.success('Employee deleted successfully', { id: toastId })
-          reload()
-        } else {
-          toast.error(result.message || 'Deletion failed', { id: toastId })
-        }
-      } catch (error) {
-        toast.error(error.response?.data?.message || 'Deletion failed', { id: toastId })
+  const handleDeleteEmployee = (employeeId, name) => {
+    setConfirmDeleteId(employeeId)
+    setConfirmDeleteName(name)
+  }
+
+  const handleConfirmDeleteEmployee = async () => {
+    if (!confirmDeleteId) return
+    const toastId = toast.loading('Deleting employee...')
+    try {
+      const result = await deleteEmployeeApi(confirmDeleteId)
+      setConfirmDeleteId(null)
+      setConfirmDeleteName("")
+      if (result.success) {
+        toast.success('Employee deleted successfully', { id: toastId })
+        reload()
+      } else {
+        toast.error(result.message || 'Deletion failed', { id: toastId })
       }
+    } catch (error) {
+      setConfirmDeleteId(null)
+      setConfirmDeleteName("")
+      toast.error(error.response?.data?.message || 'Deletion failed', { id: toastId })
     }
   }
 
@@ -337,8 +365,9 @@ function Employees() {
           className="primary-button"
           type="button"
           onClick={reload}
+          title="Refresh"
         >
-          <FiRefreshCw /> Refresh API
+          <FiRefreshCw />
         </button>
       }
     >
@@ -720,6 +749,16 @@ function Employees() {
         </aside>
         )}
       </section>
+      <ConfirmModal
+        isOpen={confirmDeleteId !== null}
+        title="Delete Employee"
+        message={`Are you sure you want to delete ${confirmDeleteName}? This action cannot be undone.`}
+        onConfirm={handleConfirmDeleteEmployee}
+        onCancel={() => {
+          setConfirmDeleteId(null)
+          setConfirmDeleteName("")
+        }}
+      />
     </AppShell>
   )
 }
